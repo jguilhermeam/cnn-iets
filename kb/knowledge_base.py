@@ -27,9 +27,10 @@ def get_kb(filename):
         if attribute not in kb:
             kb[attribute] = {}
         for s in segments:
-            if s in stopwords:
+            word = s.lower()
+            if word in stopwords:
                 continue
-            if s not in kb[attribute]:
-                kb[attribute][s] = 0
-            kb[attribute][s] += 1
+            if word not in kb[attribute]:
+                kb[attribute][word] = 0
+            kb[attribute][word] += 1
     return kb
