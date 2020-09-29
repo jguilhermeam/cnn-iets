@@ -1,5 +1,4 @@
-from kb import knowledge_base as KB
-from anchors import blocks
+from functions import functions as F
 import sys
 
 if __name__ == "__main__":
@@ -12,9 +11,9 @@ if __name__ == "__main__":
         exit()
     
     #retrieve knowledge base
-    kb = KB.get_kb(kb_file)
+    kb = F.get_kb(kb_file)
     
     #retrieve anchor blocks
     sentence = "using machine learning to retrieve medical records john nash science pub 2019 40-50"
-    anchors = blocks.get_anchors(sentence,kb,0.9)
-    print(anchors)
+    p = F.sentence_to_vector(kb,sentence)
+    print(p)
