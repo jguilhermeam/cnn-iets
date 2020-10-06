@@ -13,7 +13,9 @@ if __name__ == "__main__":
     #retrieve knowledge base
     kb = F.get_kb(kb_file)
     
-    #retrieve anchor blocks
-    sentence = "using machine learning to retrieve medical records john nash science pub 2019 40-50"
-    p = F.sentence_to_vector(kb,sentence)
-    print(p)
+    #pandas test
+    x = F.get_dataset(kb_file)
+    #get embedding matrix
+    #a,b = F.kb_to_embedding_matrix(kb,kb_file)
+    #print(a[:10])
+    #print(b[:10])
