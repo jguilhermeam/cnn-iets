@@ -9,7 +9,7 @@ Reference: https://doi.org/10.1145/3132847.3132962
 ## To Execute
 
 ```
-python3 cnn-iets.py path/to/knowledge_base_file.xml
+python3 main.py path/to/knowledge_base_file.xml
 ```
 
 ## License

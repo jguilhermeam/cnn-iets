@@ -27,8 +27,7 @@ class CNN(object):
             pos_tags = nltk.pos_tag(tokens)
             segment_size = len(tokens)
             cp_vector = F.get_probabilities(self.kb,segment)
-            for pos_segment,w in enumerate(tokens):
-                word = w.lower()
+            for pos_segment,word in enumerate(tokens):
                 vector = np.zeros(300)
                 #first feature is word2vec
                 if word in self.model:
@@ -49,7 +48,6 @@ class CNN(object):
                 vector = np.append(vector,pos_records)
                 #add to embedding matrix
                 vector = F.padarray(vector,320)
-                print("tamanho de vector = "+str(len(vector)))
                 embedding_matrix[word_index[word]] = vector
         return embedding_matrix
 
@@ -57,7 +55,7 @@ class CNN(object):
     def preprocess(self,df):
         X_train, X_test, y_train, y_test = train_test_split(df['segment'], df['label'], test_size=0.10, random_state=100)        
         tokenizer = Tokenizer(num_words=5000)
-        tokenizer.fit_on_texts(X_train)
+        tokenizer.fit_on_texts(df['segment'])
         X_train = tokenizer.texts_to_sequences(X_train)
         X_test = tokenizer.texts_to_sequences(X_test)
         vocab_size = len(tokenizer.word_index) + 1
@@ -65,4 +63,3 @@ class CNN(object):
         X_train = pad_sequences(X_train, padding='post', maxlen=maxlen)
         X_test = pad_sequences(X_test, padding='post', maxlen=maxlen)
         embedding_matrix = self.create_embedding_matrix(df,vocab_size,tokenizer.word_index)
-        print(embedding_matrix[:1])
