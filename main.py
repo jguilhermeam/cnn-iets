@@ -1,4 +1,5 @@
 from functions import functions as F
+from cnn import CNN
 import sys
 
 if __name__ == "__main__":
@@ -13,9 +14,6 @@ if __name__ == "__main__":
     #retrieve knowledge base
     kb = F.get_kb(kb_file)
     
-    #pandas test
-    x = F.get_dataset(kb_file)
-    #get embedding matrix
-    #a,b = F.kb_to_embedding_matrix(kb,kb_file)
-    #print(a[:10])
-    #print(b[:10])
+    df = F.get_dataset(kb_file)
+    cnn = CNN(kb)
+    cnn.preprocess(df)
