@@ -2,6 +2,16 @@ from sklearn.model_selection import train_test_split
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import text_to_word_sequence, one_hot
+from keras.models import Sequential
+from keras.models import Model
+from keras.layers import Dense
+from keras.layers import Flatten
+from keras.layers import Embedding
+from keras.layers import Dropout
+from keras.layers import Conv1D
+from keras.layers import Input
+from keras.layers import MaxPooling1D
+from keras.layers.merge import concatenate
 from nltk.data import find
 import nltk
 import gensim
@@ -51,6 +61,31 @@ class CNN(object):
                 embedding_matrix[word_index[word]] = vector
         return embedding_matrix
 
+    def define_model(self, num_classes, length, vocab_size,embedding_matrix):
+        inputs = Input(shape=(length,))
+        embedding = Embedding(vocab_size, 320, weights=[embedding_matrix], input_length=8, trainable=True)(inputs)
+        # channel 1
+        conv1 = Conv1D(filters=320, kernel_size=4, activation='relu')(embedding)
+        drop1 = Dropout(0.5)(conv1)
+        pool1 = MaxPooling1D(pool_size=5)(drop1)
+        flat1 = Flatten()(pool1)
+        # channel 2
+        conv2 = Conv1D(filters=320, kernel_size=6, activation='relu')(embedding)
+        drop2 = Dropout(0.5)(conv2)
+        pool2 = MaxPooling1D(pool_size=3)(drop2)
+        flat2 = Flatten()(pool2)
+        # merge
+        merged = concatenate([flat1, flat2])
+        # interpretation
+        #dense = Dense(10, activation='relu')(merged)
+        outputs = Dense(num_classes, activation='softmax')(merged)
+        model = Model(inputs=inputs, outputs=outputs)
+        # compile
+        model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        # summarize
+        print(model.summary())
+        return model
+
 
     def preprocess(self,df):
         X_train, X_test, y_train, y_test = train_test_split(df['segment'], df['label'], test_size=0.10, random_state=100)        
@@ -63,3 +98,10 @@ class CNN(object):
         X_train = pad_sequences(X_train, padding='post', maxlen=maxlen)
         X_test = pad_sequences(X_test, padding='post', maxlen=maxlen)
         embedding_matrix = self.create_embedding_matrix(df,vocab_size,tokenizer.word_index)
+        # define model
+        model = self.define_model(4,maxlen,vocab_size,embedding_matrix)
+        # fit the model
+        model.fit(X_train, y_train, epochs=10, verbose=0)
+        # evaluate the model
+        loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
+        print('Accuracy: %f' % (accuracy*100))
