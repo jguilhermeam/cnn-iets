@@ -1,7 +1,8 @@
-import xml.etree.ElementTree as ET
 import sys
 import pandas as pd
 import numpy as np
+import unicodedata
+import re
 from sklearn import preprocessing
 from keras.preprocessing.text import text_to_word_sequence
 
@@ -17,33 +18,19 @@ def padarray(A, size):
     t = size - len(A)
     return np.pad(A, pad_width=(0, t), mode='constant')
 
-def get_kb(filename):
-    lines = read_file(filename)
-    kb = {}
-    for l in lines:
-        pos = 0
-        record = ET.fromstring('<record>'+l+'</record>')
-        for segment in record:
-            attr = segment.tag
-            if attr not in kb:
-                kb[attr] = {}
-            segment_text = text_to_word_sequence(segment.text)
-            for w in segment_text:
-                word = w.lower()
-                pos += 1
-                if word not in kb[attr]:
-                    kb[attr][word] = []
-                kb[attr][word].append(pos)
-    return kb
+def normalize_str(input_str):
+    '''Transform string to lowercase, remove special chars,
+    accents and trailing spaces'''
+    byte_string = unicodedata.normalize('NFD', input_str.lower()).encode('ASCII', 'ignore')
+    normalized = re.sub(r'[^A-Za-z0-9\s]+', '',byte_string.decode('utf-8')).strip()
+    if re.match(r'^\d+\s\d+$', normalized):
+        return re.sub(r' ', '', normalized)
+    return normalized 
 
-
-def get_probabilities(kb,sentence):
-    tokens = text_to_word_sequence(sentence)
+def get_probabilities(kb,terms):
     probs = {}
-
     #get probabilities p(word,attr)
-    for i,w in enumerate(tokens):
-        word = w.lower()
+    for i,w in enumerate(terms):
         denominator = 1
         probs[word] = []
         for attr in kb:

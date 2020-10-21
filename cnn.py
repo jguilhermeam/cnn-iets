@@ -1,7 +1,7 @@
 from sklearn.model_selection import train_test_split
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
-from keras.preprocessing.text import text_to_word_sequence, one_hot
+from keras.preprocessing.text import one_hot
 from keras.models import Sequential
 from keras.models import Model
 from keras.layers import Dense
@@ -15,7 +15,8 @@ from keras.layers.merge import concatenate
 from nltk.data import find
 import nltk
 import gensim
-from functions import functions as F
+from utils import functions as F
+from models.knowledge_base import KnowledgeBase as KB
 import numpy as np
 
 
@@ -33,17 +34,20 @@ class CNN(object):
         for index, row in df.iterrows():
             segment = row['segment']
             attr = row['attribute']
-            tokens = text_to_word_sequence(segment)
-            pos_tags = nltk.pos_tag(tokens)
-            segment_size = len(tokens)
-            cp_vector = F.get_probabilities(self.kb,segment)
-            for pos_segment,word in enumerate(tokens):
+            terms = F.normalize_str(segment)
+            pos_tags = nltk.pos_tag(terms)
+            segment_size = len(terms)
+            cp_vector = F.get_probabilities(self.kb,terms)
+            for pos_segment,word in enumerate(terms):
                 vector = np.zeros(300)
                 #first feature is word2vec
                 if word in self.model:
                     vector = self.model[word]
                 #second feature is position in segment
                 vector = np.append(vector,pos_segment)
+                #third feature is position in record
+                pos_records = self.kb.k_base[attr][word][:1]
+                vector = np.append(vector,pos_records)
                 #fourth feature is size of the segment
                 vector = np.append(vector,segment_size)
                 #fifth feature is pos_tag
@@ -53,9 +57,6 @@ class CNN(object):
                 vector = np.append(vector,pos_dict[tag])
                 #sixth feature is cp propability vector
                 vector = np.append(vector,cp_vector[word])
-                #third feature is position in record
-                pos_records = self.kb[attr][word][:10]
-                vector = np.append(vector,pos_records)
                 #add to embedding matrix
                 vector = F.padarray(vector,320)
                 embedding_matrix[word_index[word]] = vector
@@ -77,7 +78,6 @@ class CNN(object):
         # merge
         merged = concatenate([flat1, flat2])
         # interpretation
-        #dense = Dense(10, activation='relu')(merged)
         outputs = Dense(num_classes, activation='softmax')(merged)
         model = Model(inputs=inputs, outputs=outputs)
         # compile
@@ -88,7 +88,7 @@ class CNN(object):
 
 
     def preprocess(self,df):
-        X_train, X_test, y_train, y_test = train_test_split(df['segment'], df['label'], test_size=0.10, random_state=100)        
+        X_train, X_test, y_train, y_test = train_test_split(df['segment'], df['label'], test_size=0.30, random_state=100)        
         tokenizer = Tokenizer(num_words=5000)
         tokenizer.fit_on_texts(df['segment'])
         X_train = tokenizer.texts_to_sequences(X_train)
