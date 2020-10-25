@@ -10,13 +10,13 @@ if __name__ == "__main__":
         input_file = sys.argv[2]
         #reference_file = sys.argv[3]
     except IndexError as e:
-        print('Missing arguments. Paramaters must be: knowledge_base input_file')
-        exit()
-    
+        print('Missing arguments. Parameters must be: knowledge_base input_file')
+        sys.exit(1)
+
     #retrieve knowledge base
     k_base = KB(kb_file)
-    records = blocking.extract_blocks(input_file,k_base)
-    
+    #records = blocking.extract_blocks(input_file,k_base)
+
     #df = F.get_dataset(kb_file)
     #cnn = CNN(kb)
     #cnn.preprocess(df)

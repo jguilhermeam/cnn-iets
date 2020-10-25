@@ -12,31 +12,33 @@ class KnowledgeBase:
         self.init_inverted_k_base()
 
     def init_kb(self, kb_file):
-        lines = F.read_file(kb_file)
-        for l in lines:
-            pos = 0
-            record = ET.fromstring('<record>'+l+'</record>')
-            for segment in record:
-                attr = segment.tag
-                if attr not in self.k_base:
-                    self.k_base[attr] = {}
-                terms = F.normalize_str(segment.text).split()
-                for term in terms:
-                    pos += 1
-                    if term not in self.k_base[attr]:
-                        self.k_base[attr][term] = []
-                    self.k_base[attr][term].append(pos)
-                
-                i = 0
-                while i < len(terms)-1:
-                    if terms[i] in self.co_occurrences:
-                        if (terms[i+1], attr) not in self.co_occurrences[terms[i]]:
-                            self.co_occurrences[terms[i]].append((terms[i+1], attr))
-                    else:
-                        self.co_occurrences[terms[i]] = []
-                    i += 1
-                if terms[-1] not in self.co_occurrences:
-                    self.co_occurrences[terms[-1]] = []
+        try:
+            tree = ET.parse(kb_file)
+        except ET.ParseError as error:
+            print("Error reading KB file. Cause: "+error.msg)
+            sys.exit(1)
+        data = tree.getroot()
+        for segment in data:
+            attr = segment.tag
+            if attr not in self.k_base:
+                self.k_base[attr] = {}
+            terms = F.normalize_str(segment.text).split()
+            for term in terms:
+                if term not in self.k_base[attr]:
+                    self.k_base[attr][term] = 0
+                self.k_base[attr][term] += 1
+
+            i = 0
+            while i < len(terms)-1:
+                if terms[i] in self.co_occurrences:
+                    if (terms[i+1], attr) not in self.co_occurrences[terms[i]]:
+                        self.co_occurrences[terms[i]].append((terms[i+1], attr))
+                else:
+                    self.co_occurrences[terms[i]] = []
+                i += 1
+
+            if terms[-1] not in self.co_occurrences:
+                self.co_occurrences[terms[-1]] = []
 
 
 

@@ -1,0 +1,6 @@
+gensim
+keras
+nltk
+pandas
+sklearn
+tensorflow-cpu

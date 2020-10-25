@@ -25,7 +25,7 @@ def normalize_str(input_str):
     normalized = re.sub(r'[^A-Za-z0-9\s]+', '',byte_string.decode('utf-8')).strip()
     if re.match(r'^\d+\s\d+$', normalized):
         return re.sub(r' ', '', normalized)
-    return normalized 
+    return normalized
 
 def get_probabilities(kb,terms):
     probs = {}
@@ -50,16 +50,18 @@ def get_probabilities(kb,terms):
                 probs[word].append(0)
     return probs
 
-def get_dataset(filename):
-    lines = read_file(filename)
+def get_dataset(kb_file):
+    try:
+        tree = ET.parse(kb_file)
+    except ET.ParseError as error:
+        print("Error reading KB file for Pandas Dataframe. Cause: "+error.msg)
+        sys.exit(1)
+    record = tree.getroot()
     data = {'segment':[],'attribute':[]}
-    for l in lines:
-        record = ET.fromstring('<record>'+l+'</record>')
-        for segment in record:
-            data['segment'].append(segment.text)
-            data['attribute'].append(segment.tag)
+    for segment in record:
+        data['segment'].append(normalize_str(segment.text))
+        data['attribute'].append(segment.tag)
     df = pd.DataFrame(data, columns = ['segment','attribute','label'])
     le = preprocessing.LabelEncoder()
     df['label'] = le.fit_transform(df['attribute'])
     return df
-
