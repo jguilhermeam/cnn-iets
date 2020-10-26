@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import unicodedata
 import re
+import xml.etree.ElementTree as ET
 from sklearn import preprocessing
 from keras.preprocessing.text import text_to_word_sequence
 
@@ -14,10 +15,6 @@ def read_file(filename):
         print("[ERROR] file not found - "+filename)
         sys.exit(1)
 
-def padarray(A, size):
-    t = size - len(A)
-    return np.pad(A, pad_width=(0, t), mode='constant')
-
 def normalize_str(input_str):
     '''Transform string to lowercase, remove special chars,
     accents and trailing spaces'''
@@ -27,27 +24,26 @@ def normalize_str(input_str):
         return re.sub(r' ', '', normalized)
     return normalized
 
-def get_probabilities(kb,terms):
+def get_probabilities(k_base,terms,num_classes):
     probs = {}
+    kb = k_base.k_base
     #get probabilities p(word,attr)
-    for i,w in enumerate(terms):
+    for i,word in enumerate(terms):
         denominator = 1
-        probs[word] = []
+        probs[word] = np.zeros(num_classes)
         for attr in kb:
             if word in kb[attr]:
-                freq = len(kb[attr][word])
+                freq = kb[attr][word]
                 for x in range(1,freq+1):
                     denominator += 1/x
-        for attr in kb:
+        for i,attr in enumerate(kb):
             numerator = 1
             if word in kb[attr]:
-                freq = len(kb[attr][word])
+                freq = kb[attr][word]
                 if freq > 0:
                     for x in range(1,freq+1):
                         numerator += 1/x
-                    probs[word].append(numerator/denominator)
-            else:
-                probs[word].append(0)
+                    probs[word][i] = numerator/denominator
     return probs
 
 def get_dataset(kb_file):

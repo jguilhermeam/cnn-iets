@@ -17,6 +17,7 @@ if __name__ == "__main__":
     k_base = KB(kb_file)
     #records = blocking.extract_blocks(input_file,k_base)
 
-    #df = F.get_dataset(kb_file)
-    #cnn = CNN(kb)
-    #cnn.preprocess(df)
+    df = F.get_dataset(kb_file)
+
+    cnn = CNN()
+    cnn.train_model(k_base,df,4)
