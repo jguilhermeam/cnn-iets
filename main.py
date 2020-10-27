@@ -19,5 +19,5 @@ if __name__ == "__main__":
 
     df = F.get_dataset(kb_file)
 
-    cnn = CNN()
-    cnn.train_model(k_base,df,4)
+    cnn = CNN(k_base,df,4)
+    print(cnn.predict("5th avenue"))

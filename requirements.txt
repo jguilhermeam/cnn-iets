@@ -1,4 +1,5 @@
 gensim
+h5py
 keras
 nltk
 pandas
