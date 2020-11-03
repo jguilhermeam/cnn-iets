@@ -15,9 +15,25 @@ if __name__ == "__main__":
 
     #retrieve knowledge base
     k_base = KB(kb_file)
-    #records = blocking.extract_blocks(input_file,k_base)
+    num_classes = len(k_base.k_base)
+    records = blocking.extract_blocks(input_file,k_base)
 
-    df = F.get_dataset(kb_file)
+    F.label_anchor_blocks(k_base,records,0.9)
 
-    cnn = CNN(k_base,df,4)
-    print(cnn.predict("5th avenue"))
+    df,code_labels = F.get_dataset(kb_file,num_classes)
+
+    cnn = CNN(k_base,df,num_classes,code_labels)
+
+    print("Making predictions...")
+    for r in records:
+        probs = []
+        for block in r:
+            probs.extend(cnn.predict(block))
+        print("Greedy labelling...")
+        print("Probs:")
+        for x in probs:
+            print("segment "+x[1].value+" in label="+x[2]+" - "+str(x[0]))
+        F.greedy_labelling(r,probs,0.3)
+        for block in r:
+            print(block.value+" - label="+block.label)
+        exit()

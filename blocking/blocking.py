@@ -3,6 +3,7 @@ from utils import functions as F
 
 
 def extract_blocks(input_file, k_base):
+    print("Extracting blocks...")
     r_input = [r for r in F.read_file(input_file)]
     normalized_input = [F.normalize_str(v) for v in r_input]
     blocks = []
@@ -39,5 +40,3 @@ def co_occurs(current_term, next_term, k_base):
         if next_term in [x[0] for x in co_occurrences]:
             return True
     return False
-
-

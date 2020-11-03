@@ -8,6 +8,7 @@ class KnowledgeBase:
         self.k_base = {}
         self.co_occurrences = {}
         self.inverted_k_base = {}
+        print("Loading KB...")
         self.init_kb(kb_file)
         self.init_inverted_k_base()
 

@@ -23,24 +23,28 @@ import numpy as np
 
 class CNN(object):
 
-    def __init__(self,k_base,df,num_classes):
+    def __init__(self,k_base,df,num_classes,code_labels):
         word2vec_sample = str(find('models/word2vec_sample/pruned.word2vec.txt'))
         self.wv = gensim.models.KeyedVectors.load_word2vec_format(word2vec_sample, binary=False)
         self.wv_size = 300 #word2vec tem 300 dimensoes
         self.emb_size = 0
         self.pos_dict = {}
         self.pos_i = 1
+        self.k_base = k_base
         self.tokenizer = Tokenizer(num_words=5000)
         self.tokenizer.fit_on_texts(df['segment'])
+        self.code_labels = code_labels
         if os.path.isfile("model.h5"):
+            print("Loading CNN model...")
             self.model = load_model("model.h5")
             self.max_length = 10
         else:
+            print("Training CNN model...")
             self.train_model(k_base,df,num_classes)
 
 
 
-    def create_embedding_matrix(self,k_base,df,vocab_size,word_index,num_classes):
+    def create_embedding_matrix(self,df,vocab_size,word_index,num_classes):
         pos_dict = {}
         self.emb_size = self.wv_size + num_classes + 3 #word2vec + cp vector + 3 features (position,lenght and postag)
         embedding_matrix = np.zeros((vocab_size,self.emb_size))
@@ -50,7 +54,7 @@ class CNN(object):
             terms = segment.split()
             pos_tags = nltk.pos_tag(terms)
             segment_size = len(terms)
-            cp_vector = F.get_probabilities(k_base,terms,num_classes)
+            cp_vector = F.get_probabilities(self.k_base,terms,num_classes)
             for pos_segment,word in enumerate(terms):
                 vector = np.zeros(self.wv_size)
                 #first feature is word2vec
@@ -99,7 +103,7 @@ class CNN(object):
         return model
 
 
-    def train_model(self,k_base,df,num_classes):
+    def train_model(self,df,num_classes):
         X_train, X_test, y_train, y_test = train_test_split(df['segment'], df['label'], test_size=0.10, random_state=100)
         X_train = self.tokenizer.texts_to_sequences(X_train)
         X_test = self.tokenizer.texts_to_sequences(X_test)
@@ -110,7 +114,7 @@ class CNN(object):
             self.max_length = max(max_length,len(s.split()))
         X_train = pad_sequences(X_train, padding='post', maxlen=self.max_length)
         X_test = pad_sequences(X_test, padding='post', maxlen=self.max_length)
-        embedding_matrix = self.create_embedding_matrix(k_base,df,vocab_size,self.tokenizer.word_index,num_classes)
+        embedding_matrix = self.create_embedding_matrix(df,vocab_size,self.tokenizer.word_index,num_classes)
         # define model
         self.model = self.define_model(num_classes,vocab_size,128,[4,6],embedding_matrix)
         # fit the model
@@ -120,6 +124,24 @@ class CNN(object):
         #loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
         #print('Accuracy: %f' % (accuracy*100))
 
-    def predict(self,segment):
-        tokens = self.tokenizer.texts_to_sequences(segment.split())
-        return self.model.predict(pad_sequences(tokens,padding='post',maxlen=self.max_length))
+    def predict(self,block):
+        tokens = self.tokenizer.texts_to_sequences(block.value.split())
+        predictions = self.model.predict(pad_sequences(tokens,padding='post',maxlen=self.max_length))[0]
+        scores = {}
+        for i in range(0,len(predictions)):
+            scores[self.code_labels[i]] = predictions[i]
+        #normalizing cnn output
+        new_scores = []
+        denominator = 0
+        for attr,prob in scores.items():
+            if block.value in self.k_base.k_base[attr]:
+                denominator += prob
+        for attr,prob in scores.items():
+            if block.value in self.k_base.k_base[attr]:
+                try:
+                    x = prob / denominator
+                    if x > 0:
+                        new_scores.append((x,block,attr))
+                except Exception as e:
+                    print("division by zero")
+        return new_scores
