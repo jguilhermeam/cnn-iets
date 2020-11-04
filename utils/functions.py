@@ -90,6 +90,35 @@ def fix_anchor_blocks(blocks,anchors):
         if len(anchors[attr]) > 1:
             print("CASO ESPECIAL CORRIGIR")
 
+def get_missing_anchors(record,k_base):
+    missing = list(k_base.keys())
+    for block in record:
+        if block.is_anchor() == True:
+            missing.remove(block.label)
+    return missing
+
+def adjust_cnn_probs(probs,record,i,missing):
+    possible_attributes = []
+    for j in reversed(range(0,i)):
+        if record[j].is_anchor() == True:
+            possible_attributes.append(record[j].label)
+            break
+    for j in range(i+1,len(record)):
+        if record[j].is_anchor() == True:
+            possible_attributes.append(record[j].label)
+            break
+    possible_attributes.extend(missing)
+    new_probs = []
+    denominator = 0
+    for attr in possible_attributes:
+        denominator += probs[attr]
+    for attr in possible_attributes:
+        p = probs[attr]/denominator
+        new_probs.append((p,record[i],attr))
+    return new_probs
+
+
+
 def get_max_prob(partition,probs):
     max = -1
     choosen = None

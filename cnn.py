@@ -126,22 +126,9 @@ class CNN(object):
 
     def predict(self,block):
         tokens = self.tokenizer.texts_to_sequences(block.value.split())
-        predictions = self.model.predict(pad_sequences(tokens,padding='post',maxlen=self.max_length))[0]
+        padded = pad_sequences(tokens, padding='post',maxlen=self.max_length)
+        predictions = self.model.predict(padded)[0]
         scores = {}
         for i in range(0,len(predictions)):
             scores[self.code_labels[i]] = predictions[i]
-        #normalizing cnn output
-        new_scores = []
-        denominator = 0
-        for attr,prob in scores.items():
-            if block.value in self.k_base.k_base[attr]:
-                denominator += prob
-        for attr,prob in scores.items():
-            if block.value in self.k_base.k_base[attr]:
-                try:
-                    x = prob / denominator
-                    if x > 0:
-                        new_scores.append((x,block,attr))
-                except Exception as e:
-                    print("division by zero")
-        return new_scores
+        return scores

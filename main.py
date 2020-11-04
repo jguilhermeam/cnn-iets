@@ -27,12 +27,13 @@ if __name__ == "__main__":
     print("Making predictions...")
     for r in records:
         probs = []
-        for block in r:
-            probs.extend(cnn.predict(block))
+        missing_anchors = F.get_missing_anchors(r,k_base.k_base)
+        print("missing_anchors = "+str(missing_anchors))
+        for i,block in enumerate(r):
+            if block.is_anchor() == False:
+                cnn_output = cnn.predict(block)
+                probs.extend(F.adjust_cnn_probs(cnn_output,r,i,missing_anchors))
         print("Greedy labelling...")
-        print("Probs:")
-        for x in probs:
-            print("segment "+x[1].value+" in label="+x[2]+" - "+str(x[0]))
         F.greedy_labelling(r,probs,0.3)
         for block in r:
             print(block.value+" - label="+block.label)
