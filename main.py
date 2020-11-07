@@ -2,7 +2,7 @@ from utils import functions as F
 from models.knowledge_base import KnowledgeBase as KB
 from blocking import blocking
 from cnn import CNN
-import sys
+import sys,time
 
 if __name__ == "__main__":
     try:
@@ -18,14 +18,13 @@ if __name__ == "__main__":
     num_classes = len(k_base.k_base)
     records = blocking.extract_blocks(input_file,k_base)
 
-    F.label_anchor_blocks(k_base,records,0.9)
-
     df,code_labels = F.get_dataset(kb_file,num_classes)
 
     cnn = CNN(k_base,df,num_classes,code_labels)
 
     print("Making predictions...")
     for r in records:
+        F.label_anchor_blocks(k_base,r,0.9)
         probs = []
         missing_anchors = F.get_missing_anchors(r,k_base.k_base)
         print("missing_anchors = "+str(missing_anchors))
@@ -37,4 +36,5 @@ if __name__ == "__main__":
         F.greedy_labelling(r,probs,0.3)
         for block in r:
             print(block.value+" - label="+block.label)
-        exit()
+        print("\n===================\n")
+        time.sleep(10)

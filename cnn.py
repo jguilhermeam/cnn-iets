@@ -81,7 +81,7 @@ class CNN(object):
 
     def define_model(self, num_classes, vocab_size, num_filters, filter_sizes, embedding_matrix):
         inputs = Input(shape=(max_length,))
-        embedding = Embedding(vocab_size, self.emb_size, weights=[embedding_matrix], input_length=self.max_length, trainable=True)(inputs)
+        embedding = Embedding(vocab_size, self.emb_size, input_length=self.max_length, trainable=True)(inputs)
         layers = []
         for i in filter_sizes:
             conv = Conv1D(filters=num_filters, kernel_size=i, activation='relu')(embedding)

@@ -46,49 +46,42 @@ def get_probabilities(k_base,terms,num_classes):
                     probs[word][i] = numerator/denominator
     return probs
 
-def label_anchor_blocks(k_base,records,threshold):
+def label_anchor_blocks(k_base,blocks,threshold):
     print("Labelling anchor blocks...")
     kb = k_base.k_base
-    for blocks in records:
-        anchors = {}
+    anchors = {}
+    for attr in kb:
+        anchors[attr] = []
+    for i,block in enumerate(blocks):
+        word = block.value
+        denominator = 1
         for attr in kb:
-            anchors[attr] = []
-        for i,block in enumerate(blocks):
-            word = block.value
-            denominator = 1
-            for attr in kb:
-                if word in kb[attr]:
-                    freq = kb[attr][word]
+            if word in kb[attr]:
+                freq = kb[attr][word]
+                for x in range(1,freq+1):
+                    denominator += 1/x
+        for attr in kb:
+            numerator = 1
+            if word in kb[attr]:
+                freq = kb[attr][word]
+                if freq > 0:
                     for x in range(1,freq+1):
-                        denominator += 1/x
-            for attr in kb:
-                numerator = 1
-                if word in kb[attr]:
-                    freq = kb[attr][word]
-                    if freq > 0:
-                        for x in range(1,freq+1):
-                            numerator += 1/x
-                        prob = (numerator/denominator)
-                        if prob > threshold:
-                            if len(anchors[attr]) > 0:
-                                if prob > anchors[attr][0].anchor_prob:
-                                    if freq > anchors[attr][0].freq:
-                                        anchors[attr][0].clear()
-                                        block.set_anchor(attr,prob,freq)
-                                        anchors[attr][0] = block
-                                    elif freq == anchors[attr][0].freq:
-                                        block.set_anchor(attr,prob,freq)
-                                        anchors[attr].append(block)
-                            else:
-                                block.set_anchor(attr,prob,freq)
-                                anchors[attr].append(block)
-        #now we fix anchors for each record
-        fix_anchor_blocks(blocks,anchors)
-
-def fix_anchor_blocks(blocks,anchors):
-    for attr in anchors:
-        if len(anchors[attr]) > 1:
-            print("CASO ESPECIAL CORRIGIR")
+                        numerator += 1/x
+                    prob = (numerator/denominator)
+                    if prob > threshold:
+                        if len(anchors[attr]) > 0:
+                            if prob > anchors[attr][0].anchor_prob:
+                                if freq > anchors[attr][0].freq:
+                                    anchors[attr][0].clear()
+                                    block.set_anchor(attr,prob,freq)
+                                    anchors[attr][0] = block
+                                elif freq == anchors[attr][0].freq:
+                                    block.set_anchor(attr,prob,freq)
+                                    anchors[attr].append(block)
+                        else:
+                            block.set_anchor(attr,prob,freq)
+                            anchors[attr].append(block)
+    #TODO fix anchors
 
 def get_missing_anchors(record,k_base):
     missing = list(k_base.keys())
@@ -140,42 +133,42 @@ def greedy_labelling(blocks,probs,threshold):
     for p in partitions:
         while True:
             choosen = get_max_prob(p,probs)
-            if choosen[0] <= threshold:
+            if choosen == None or choosen[0] <= threshold:
                 break
             probs.remove(choosen)
             sc = choosen[1]
             Ac = choosen[2]
             sc.label = Ac
             index = p.index(sc)
-            for i,sc_b in enumerate(p):
+            for i,sc_b in enumerate(blocks):
                 if i < index and sc_b.label == Ac:
                     in_between = False
                     for j in range(i+1,index):
-                        if p[j].label != Ac and len(p[j].label) > 0:
+                        if blocks[j].label != Ac and len(blocks[j].label) > 0:
                             in_between = True
                     if in_between == True:
                         sc.label = ''
                     else:
                         for j in range(i+1,index):
-                            p[j].label = Ac
+                            blocks[j].label = Ac
                 elif i > index and sc_b.label == Ac:
                     in_between = False
                     for j in range(index+1,i):
-                        if p[j].label != Ac and len(p[j].label) > 0:
+                        if blocks[j].label != Ac and len(blocks[j].label) > 0:
                             in_between = True
                     if in_between == True:
                         sc.label = ''
                     else:
                         for j in range(index+1,i):
-                            p[j].label = Ac
-        if len(probs) == 0:
-            break
-        exists_unlabelled = False
-        for b in p:
-            if len(b.label) == 0:
-                exists_unlabelled = True
-        if exists_unlabelled == False:
-            break
+                            blocks[j].label = Ac
+            if len(probs) == 0:
+                break
+            exists_unlabelled = False
+            for b in p:
+                if len(b.label) == 0:
+                    exists_unlabelled = True
+            if exists_unlabelled == False:
+                break
 
 
 
