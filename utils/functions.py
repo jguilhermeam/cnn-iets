@@ -139,7 +139,7 @@ def greedy_labelling(blocks,probs,threshold):
             sc = choosen[1]
             Ac = choosen[2]
             sc.label = Ac
-            index = p.index(sc)
+            index = blocks.index(sc)
             for i,sc_b in enumerate(blocks):
                 if i < index and sc_b.label == Ac:
                     in_between = False

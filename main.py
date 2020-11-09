@@ -33,7 +33,7 @@ if __name__ == "__main__":
                 cnn_output = cnn.predict(block)
                 probs.extend(F.adjust_cnn_probs(cnn_output,r,i,missing_anchors))
         print("Greedy labelling...")
-        F.greedy_labelling(r,probs,0.3)
+        F.greedy_labelling(r,probs,0.6)
         for block in r:
             print(block.value+" - label="+block.label)
         print("\n===================\n")
