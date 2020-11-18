@@ -56,10 +56,11 @@ class CNN(object):
             segment_size = len(terms)
             cp_vector = F.get_probabilities(self.k_base,terms,num_classes)
             for pos_segment,word in enumerate(terms):
-                vector = np.zeros(self.wv_size)
                 #first feature is word2vec
                 if word in self.wv:
                     vector = self.wv[word]
+                else:
+                    vector = np.random.rand(self.wv_size)
                 #second feature is position in segment
                 vector = np.append(vector,pos_segment)
                 #third feature is position in record - it was removed
@@ -104,16 +105,17 @@ class CNN(object):
 
 
     def train_model(self,df,num_classes):
-        X_train, X_test, y_train, y_test = train_test_split(df['segment'], df['label'], test_size=0.10, random_state=100)
-        X_train = self.tokenizer.texts_to_sequences(X_train)
-        X_test = self.tokenizer.texts_to_sequences(X_test)
+        #X_train, X_test, y_train, y_test = train_test_split(df['segment'], df['label'], test_size=0.10, random_state=100)
+        X_train = self.tokenizer.texts_to_sequences(df['segment'])
+        y_train = df['label']
+        #X_test = self.tokenizer.texts_to_sequences(X_test)
         vocab_size = len(self.tokenizer.word_index) + 1
         self.max_length = -1
         i = 1
         for s in df['segment']:
             self.max_length = max(self.max_length,len(s.split()))
         X_train = pad_sequences(X_train, padding='post', maxlen=self.max_length)
-        X_test = pad_sequences(X_test, padding='post', maxlen=self.max_length)
+        #X_test = pad_sequences(X_test, padding='post', maxlen=self.max_length)
         embedding_matrix = self.create_embedding_matrix(df,vocab_size,self.tokenizer.word_index,num_classes)
         # define model
         self.model = self.define_model(num_classes,vocab_size,128,[4,6],embedding_matrix)
