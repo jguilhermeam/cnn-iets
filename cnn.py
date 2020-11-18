@@ -17,7 +17,7 @@ import nltk
 import gensim
 import os.path
 from utils import functions as F
-from models.knowledge_base import KnowledgeBase as KB
+from utils.knowledge_base import KnowledgeBase as KB
 import numpy as np
 
 
@@ -36,11 +36,11 @@ class CNN(object):
         self.code_labels = code_labels
         if os.path.isfile("model.h5"):
             print("Loading CNN model...")
-            self.model = load_model("model.h5")
+            self.model = load_model("model.h5",compile=False)
             self.max_length = 10
         else:
             print("Training CNN model...")
-            self.train_model(k_base,df,num_classes)
+            self.train_model(df,num_classes)
 
 
 
@@ -80,7 +80,7 @@ class CNN(object):
 
 
     def define_model(self, num_classes, vocab_size, num_filters, filter_sizes, embedding_matrix):
-        inputs = Input(shape=(max_length,))
+        inputs = Input(shape=(self.max_length,))
         embedding = Embedding(vocab_size, self.emb_size, input_length=self.max_length, trainable=True)(inputs)
         layers = []
         for i in filter_sizes:
@@ -111,7 +111,7 @@ class CNN(object):
         self.max_length = -1
         i = 1
         for s in df['segment']:
-            self.max_length = max(max_length,len(s.split()))
+            self.max_length = max(self.max_length,len(s.split()))
         X_train = pad_sequences(X_train, padding='post', maxlen=self.max_length)
         X_test = pad_sequences(X_test, padding='post', maxlen=self.max_length)
         embedding_matrix = self.create_embedding_matrix(df,vocab_size,self.tokenizer.word_index,num_classes)

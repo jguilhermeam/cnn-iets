@@ -1,6 +1,6 @@
 from utils import functions as F
-from models.knowledge_base import KnowledgeBase as KB
-from blocking import blocking
+from utils.knowledge_base import KnowledgeBase as KB
+from blocking import blocking,block
 from cnn import CNN
 import sys,time
 
@@ -24,16 +24,17 @@ if __name__ == "__main__":
 
     print("Making predictions...")
     for r in records:
-        F.label_anchor_blocks(k_base,r,0.9)
+        F.label_anchor_blocks(k_base,r,0.6)
         probs = []
         missing_anchors = F.get_missing_anchors(r,k_base.k_base)
         print("missing_anchors = "+str(missing_anchors))
         for i,block in enumerate(r):
-            if block.is_anchor() == False:
+            if block.is_anchor == False:
                 cnn_output = cnn.predict(block)
                 probs.extend(F.adjust_cnn_probs(cnn_output,r,i,missing_anchors))
         print("Greedy labelling...")
-        F.greedy_labelling(r,probs,0.6)
+        F.greedy_labelling(r,probs,0.3)
+        r = blocking.join_blocks(r)
         for block in r:
             print(block.value+" - label="+block.label)
         print("\n===================\n")

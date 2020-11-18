@@ -1,4 +1,4 @@
-from models.block import Block
+from blocking.block import Block
 from utils import functions as F
 
 
@@ -40,3 +40,29 @@ def co_occurs(current_term, next_term, k_base):
         if next_term in [x[0] for x in co_occurrences]:
             return True
     return False
+
+def merge_blocks(aux):
+    block = aux[0]
+    for i in range(1,len(aux)):
+        block.value += ' ' + aux[i].value
+        block.raw_value += ' ' + aux[i].raw_value
+    return block
+
+def join_blocks(record):
+    aux = []
+    final_record = []
+    for block in record:
+        if block.label != 'none':
+            if len(aux) == 0 or block.label == aux[0].label:
+                aux.append(block)
+            else:
+                final_record.append(merge_blocks(aux))
+                aux = [block]
+        else:
+            if len(aux) > 0:
+                final_record.append(merge_blocks(aux))
+                aux = []
+            final_record.append(block)
+    if len(aux) > 0:
+        final_record.append(merge_blocks(aux))
+    return final_record

@@ -86,18 +86,18 @@ def label_anchor_blocks(k_base,blocks,threshold):
 def get_missing_anchors(record,k_base):
     missing = list(k_base.keys())
     for block in record:
-        if block.is_anchor() == True:
+        if block.is_anchor == True:
             missing.remove(block.label)
     return missing
 
 def adjust_cnn_probs(probs,record,i,missing):
     possible_attributes = []
     for j in reversed(range(0,i)):
-        if record[j].is_anchor() == True:
+        if record[j].is_anchor == True:
             possible_attributes.append(record[j].label)
             break
     for j in range(i+1,len(record)):
-        if record[j].is_anchor() == True:
+        if record[j].is_anchor == True:
             possible_attributes.append(record[j].label)
             break
     possible_attributes.extend(missing)
@@ -125,7 +125,7 @@ def greedy_labelling(blocks,probs,threshold):
     partitions = [[blocks[0]]]
     j = 0
     for i in range(1,len(blocks)):
-        if blocks[i].is_anchor() and blocks[i-1].is_anchor():
+        if blocks[i].is_anchor == True and blocks[i-1].is_anchor == True:
             partitions.append([blocks[i]])
             j += 1
         else:
@@ -147,7 +147,7 @@ def greedy_labelling(blocks,probs,threshold):
                         if blocks[j].label != Ac and len(blocks[j].label) > 0:
                             in_between = True
                     if in_between == True:
-                        sc.label = ''
+                        sc.label = 'none'
                     else:
                         for j in range(i+1,index):
                             blocks[j].label = Ac
@@ -157,7 +157,7 @@ def greedy_labelling(blocks,probs,threshold):
                         if blocks[j].label != Ac and len(blocks[j].label) > 0:
                             in_between = True
                     if in_between == True:
-                        sc.label = ''
+                        sc.label = 'none'
                     else:
                         for j in range(index+1,i):
                             blocks[j].label = Ac
@@ -165,11 +165,11 @@ def greedy_labelling(blocks,probs,threshold):
                 break
             exists_unlabelled = False
             for b in p:
-                if len(b.label) == 0:
+                if b.label == 'none':
                     exists_unlabelled = True
+                    break
             if exists_unlabelled == False:
                 break
-
 
 
 

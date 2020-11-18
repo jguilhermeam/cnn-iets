@@ -10,11 +10,10 @@ class Block:
         self.label = label
         self.anchor_prob = prob
         self.freq = freq
+        self.is_anchor = True
 
     def clear(self):
-        self.label = ''
+        self.label = 'none'
         self.anchor_prob = 0
         self.freq = 0
-
-    def is_anchor(self):
-        return self.anchor_prob > 0
+        self.is_anchor = False
