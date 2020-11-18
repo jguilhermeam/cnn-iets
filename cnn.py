@@ -127,7 +127,7 @@ class CNN(object):
         #print('Accuracy: %f' % (accuracy*100))
 
     def predict(self,block):
-        tokens = self.tokenizer.texts_to_sequences(block.value.split())
+        tokens = self.tokenizer.texts_to_sequences([block.value])
         padded = pad_sequences(tokens, padding='post',maxlen=self.max_length)
         predictions = self.model.predict(padded)[0]
         scores = {}

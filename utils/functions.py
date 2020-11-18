@@ -48,40 +48,37 @@ def get_probabilities(k_base,terms,num_classes):
     return probs
 
 def label_anchor_blocks(k_base,blocks,threshold):
-    print("Labelling anchor blocks...")
     kb = k_base.k_base
     anchors = {}
     for attr in kb:
         anchors[attr] = []
     for i,block in enumerate(blocks):
-        word = block.value
         denominator = 1
         for attr in kb:
-            if word in kb[attr]:
-                freq = kb[attr][word]
-                for x in range(1,freq+1):
-                    denominator += 1/x
+            for word in block.value.split():
+                if word in kb[attr]:
+                    freq = kb[attr][word]
+                    for x in range(1,freq+1):
+                        denominator += 1/x
         for attr in kb:
-            numerator = 1
-            if word in kb[attr]:
-                freq = kb[attr][word]
-                if freq > 0:
+            numerator = 0
+            for word in block.value.split():
+                if word in kb[attr]:
+                    freq = kb[attr][word]
                     for x in range(1,freq+1):
                         numerator += 1/x
-                    prob = (numerator/denominator)
-                    if prob > threshold:
-                        if len(anchors[attr]) > 0:
-                            if prob > anchors[attr][0].anchor_prob:
-                                if freq > anchors[attr][0].freq:
-                                    anchors[attr][0].clear()
-                                    block.set_anchor(attr,prob,freq)
-                                    anchors[attr][0] = block
-                                elif freq == anchors[attr][0].freq:
-                                    block.set_anchor(attr,prob,freq)
-                                    anchors[attr].append(block)
-                        else:
-                            block.set_anchor(attr,prob,freq)
-                            anchors[attr].append(block)
+            if numerator > 0:
+                numerator += 1
+            prob = (numerator/denominator)
+            if prob > threshold:
+                if len(anchors[attr]) > 0:
+                    if prob > anchors[attr][0].anchor_prob:
+                        anchors[attr][0].clear()
+                        block.set_anchor(attr,prob,1)
+                        anchors[attr] = [block]
+                else:
+                    block.set_anchor(attr,prob,1)
+                    anchors[attr].append(block)
     #TODO fix anchors
 
 def get_missing_anchors(record,k_base):
@@ -91,15 +88,15 @@ def get_missing_anchors(record,k_base):
             missing.remove(block.label)
     return missing
 
-def adjust_cnn_probs(probs,record,i,missing):
+def adjust_cnn_probs(probs,blocks,i,missing):
     possible_attributes = []
     for j in reversed(range(0,i)):
-        if record[j].is_anchor == True:
-            possible_attributes.append(record[j].label)
+        if blocks[j].is_anchor == True:
+            possible_attributes.append(blocks[j].label)
             break
-    for j in range(i+1,len(record)):
-        if record[j].is_anchor == True:
-            possible_attributes.append(record[j].label)
+    for j in range(i+1,len(blocks)):
+        if blocks[j].is_anchor == True:
+            possible_attributes.append(blocks[j].label)
             break
     possible_attributes.extend(missing)
     new_probs = []
@@ -108,7 +105,7 @@ def adjust_cnn_probs(probs,record,i,missing):
         denominator += probs[attr]
     for attr in possible_attributes:
         p = probs[attr]/denominator
-        new_probs.append((p,record[i],attr))
+        new_probs.append((p,blocks[i],attr))
     return new_probs
 
 
