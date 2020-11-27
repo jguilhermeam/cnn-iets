@@ -6,14 +6,14 @@ class Block:
         self.raw_value = raw
         self.clear()
 
-    def set_anchor(self,label,prob,freq):
-        self.label = label
+    def set_anchor(self,attr,prob,freq):
+        self.attr = attr
         self.anchor_prob = prob
         self.freq = freq
         self.is_anchor = True
 
     def clear(self):
-        self.label = 'none'
+        self.attr = 'none'
         self.anchor_prob = 0
         self.freq = 0
         self.is_anchor = False

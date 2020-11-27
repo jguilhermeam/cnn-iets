@@ -1,7 +1,9 @@
 from utils import functions as F
 from utils.knowledge_base import KnowledgeBase as KB
 from blocking import blocking,block
-from cnn import CNN
+from cnn_labelling.cnn import CNN
+from cnn_labelling import greedy_labelling
+from kb_labelling import anchor_labelling
 import sys,time
 
 if __name__ == "__main__":
@@ -15,25 +17,20 @@ if __name__ == "__main__":
 
     #retrieve knowledge base
     k_base = KB(kb_file)
-    num_classes = len(k_base.k_base)
+
+    #extract blocks from input file
     records = blocking.extract_blocks(input_file,k_base)
 
-    df,code_labels = F.get_dataset(kb_file,num_classes)
 
-    cnn = CNN(k_base,df,num_classes,code_labels)
+    #kb based labelling - detecting anchor blocks
+    anchor_labelling.kb_based_labelling(k_base,records,0.9)
 
-    print("Making predictions...")
+    #cnn-based greedy labelling
+    cnn = CNN(k_base)
+    greedy_labelling.cnn_greedy_labelling(k_base,records,cnn)
+
     for r in records:
-        F.label_anchor_blocks(k_base,r,0.55)
-        probs = []
-        missing_anchors = F.get_missing_anchors(r,k_base.k_base)
-        for i,block in enumerate(r):
-            if block.is_anchor == False:
-                cnn_output = cnn.predict(block)
-                probs.extend(F.adjust_cnn_probs(cnn_output,r,i,missing_anchors))
-        F.greedy_labelling(r,probs,0.3)
-        r = blocking.join_blocks(r)
         for block in r:
-            print(block.raw_value+" - label="+block.label)
+            print(block.raw_value+" - attribute="+block.attr)
         print("\n===================\n")
         time.sleep(20)

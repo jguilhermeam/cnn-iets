@@ -1,4 +1,3 @@
-from sklearn.model_selection import train_test_split
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.models import Sequential
@@ -23,7 +22,7 @@ import numpy as np
 
 class CNN(object):
 
-    def __init__(self,k_base,df,num_classes,code_labels):
+    def __init__(self,k_base):
         word2vec_sample = str(find('models/word2vec_sample/pruned.word2vec.txt'))
         self.wv = gensim.models.KeyedVectors.load_word2vec_format(word2vec_sample, binary=False)
         self.wv_size = 300 #word2vec tem 300 dimensoes
@@ -31,30 +30,31 @@ class CNN(object):
         self.pos_dict = {}
         self.pos_i = 1
         self.k_base = k_base
-        self.tokenizer = Tokenizer(num_words=5000)
-        self.tokenizer.fit_on_texts(df['segment'])
-        self.code_labels = code_labels
+        self.tokenizer = Tokenizer(num_words=10000)
+        self.tokenizer.fit_on_texts(self.k_base.df['segment'])
         if os.path.isfile("model.h5"):
             print("Loading CNN model...")
             self.model = load_model("model.h5",compile=False)
-            self.max_length = 10
+            self.max_length = 0
+            for segment in self.k_base.df['segment']:
+                self.max_length = max(self.max_length,len(segment.split()))
         else:
             print("Training CNN model...")
-            self.train_model(df,num_classes)
+            self.train_model()
 
 
 
-    def create_embedding_matrix(self,df,vocab_size,word_index,num_classes):
+    def create_embedding_matrix(self,vocab_size,word_index):
         pos_dict = {}
-        self.emb_size = self.wv_size + num_classes + 3 #word2vec + cp vector + 3 features (position,lenght and postag)
+        self.emb_size = self.wv_size + self.k_base.num_attributes + 3 #word2vec + cp vector (size = num_attributes) + 3 features (position,lenght and postag)
         embedding_matrix = np.zeros((vocab_size,self.emb_size))
-        for index, row in df.iterrows():
+        for index, row in self.k_base.df.iterrows():
             segment = row['segment']
             attr = row['attribute']
             terms = segment.split()
             pos_tags = nltk.pos_tag(terms)
             segment_size = len(terms)
-            cp_vector = F.get_probabilities(self.k_base,terms,num_classes)
+            cp_vector = self.k_base.get_probabilities(terms)
             for pos_segment,word in enumerate(terms):
                 #first feature is word2vec
                 if word in self.wv:
@@ -64,7 +64,6 @@ class CNN(object):
                 #second feature is position in segment
                 vector = np.append(vector,pos_segment)
                 #third feature is position in record - it was removed
-
                 #fourth feature is size of the segment
                 vector = np.append(vector,segment_size)
                 #fifth feature is pos_tag
@@ -80,7 +79,7 @@ class CNN(object):
         return embedding_matrix
 
 
-    def define_model(self, num_classes, vocab_size, num_filters, filter_sizes, embedding_matrix):
+    def define_model(self, vocab_size, num_filters, filter_sizes, embedding_matrix):
         inputs = Input(shape=(self.max_length,))
         embedding = Embedding(vocab_size, self.emb_size, input_length=self.max_length, trainable=True)(inputs)
         layers = []
@@ -95,7 +94,7 @@ class CNN(object):
         flat = Flatten()(merged)
         drop = Dropout(0.5)(flat)
         # softmax
-        outputs = Dense(num_classes, activation='softmax')(drop)
+        outputs = Dense(self.k_base.num_attributes, activation='softmax')(drop)
         model = Model(inputs=inputs, outputs=outputs)
         # compile
         model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -104,27 +103,20 @@ class CNN(object):
         return model
 
 
-    def train_model(self,df,num_classes):
-        #X_train, X_test, y_train, y_test = train_test_split(df['segment'], df['label'], test_size=0.10, random_state=100)
-        X_train = self.tokenizer.texts_to_sequences(df['segment'])
-        y_train = df['label']
-        #X_test = self.tokenizer.texts_to_sequences(X_test)
+    def train_model(self):
+        X_train = self.tokenizer.texts_to_sequences(self.k_base.df['segment'])
+        y_train = self.k_base.df['label']
         vocab_size = len(self.tokenizer.word_index) + 1
-        self.max_length = -1
-        i = 1
-        for s in df['segment']:
-            self.max_length = max(self.max_length,len(s.split()))
+        self.max_length = 0
+        for x in X_train:
+            self.max_length = max(self.max_length,len(x))
         X_train = pad_sequences(X_train, padding='post', maxlen=self.max_length)
-        #X_test = pad_sequences(X_test, padding='post', maxlen=self.max_length)
-        embedding_matrix = self.create_embedding_matrix(df,vocab_size,self.tokenizer.word_index,num_classes)
+        embedding_matrix = self.create_embedding_matrix(vocab_size,self.tokenizer.word_index)
         # define model
-        self.model = self.define_model(num_classes,vocab_size,128,[4,6],embedding_matrix)
+        self.model = self.define_model(vocab_size,128,[4,6],embedding_matrix)
         # fit the model
         self.model.fit(X_train, y_train, epochs=10, verbose=0)
         self.model.save("model.h5")
-        # evaluate the model
-        #loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
-        #print('Accuracy: %f' % (accuracy*100))
 
     def predict(self,block):
         tokens = self.tokenizer.texts_to_sequences([block.value])
@@ -132,5 +124,5 @@ class CNN(object):
         predictions = self.model.predict(padded)[0]
         scores = {}
         for i in range(0,len(predictions)):
-            scores[self.code_labels[i]] = predictions[i]
+            scores[self.k_base.labels_dict[i]] = predictions[i]
         return scores
