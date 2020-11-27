@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     #cnn-based greedy labelling
     cnn = CNN(k_base)
-    greedy_labelling.cnn_greedy_labelling(k_base,records,cnn)
+    greedy_labelling.cnn_greedy_labelling(k_base,records,cnn,0.6)
 
     for r in records:
         for block in r:

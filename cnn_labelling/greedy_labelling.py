@@ -1,11 +1,11 @@
-def cnn_greedy_labelling(k_base,records,cnn):
+def cnn_greedy_labelling(k_base,records,cnn,threshold):
     for blocks in records:
         probabilities = []
         for i in range(0,len(blocks)):
             if blocks[i].is_anchor == False:
                 cnn_output = cnn.predict(blocks[i])
                 probabilities.extend(normalize_cnn_probabilities(k_base,cnn_output,blocks,i))
-        greedy_labelling(blocks,probabilities,0.3)
+        greedy_labelling(blocks,probabilities,threshold)
 
 def get_missing_anchors(record,k_base):
     missing = k_base.get_attributes()
@@ -26,14 +26,14 @@ def normalize_cnn_probabilities(k_base,probabilities,blocks,pos):
             possible_attributes.append(blocks[j].attr)
             break
     possible_attributes.extend(missing_anchors)
-    new_probabilities = []
+    normalized_probabilities = []
     denominator = 0
     for attr in possible_attributes:
         denominator += probabilities[attr]
     for attr in possible_attributes:
         p = probabilities[attr]/denominator
-        new_probabilities.append((p,blocks[pos],attr))
-    return new_probabilities
+        normalized_probabilities.append((p,blocks[pos],attr))
+    return normalized_probabilities
 
 
 def get_max_prob(partition,probabilities):
@@ -68,7 +68,7 @@ def greedy_labelling(blocks,probabilities,threshold):
                 if i < index and sc_b.attr == Ac:
                     in_between = False
                     for j in range(i+1,index):
-                        if blocks[j].attr != Ac and len(blocks[j].attr) > 0:
+                        if blocks[j].attr != Ac and blocks[j].attr != 'none':
                             in_between = True
                     if in_between == True:
                         sc.attr = 'none'
@@ -78,7 +78,7 @@ def greedy_labelling(blocks,probabilities,threshold):
                 elif i > index and sc_b.attr == Ac:
                     in_between = False
                     for j in range(index+1,i):
-                        if blocks[j].attr != Ac and len(blocks[j].attr) > 0:
+                        if blocks[j].attr != Ac and blocks[j].attr != 'none':
                             in_between = True
                     if in_between == True:
                         sc.attr = 'none'

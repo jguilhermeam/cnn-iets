@@ -6,7 +6,7 @@ def kb_based_labelling(k_base,records,threshold):
         anchors = {}
         for attr in attributes:
             anchors[attr] = []
-        for i,block in enumerate(blocks):
+        for block in blocks:
             denominator = 1
             for attr in attributes:
                 for word in block.value.split():
@@ -14,7 +14,7 @@ def kb_based_labelling(k_base,records,threshold):
                         freq = kb[attr][word]
                         for x in range(1,freq+1):
                             denominator += 1/x
-            for attr in kb:
+            for attr in attributes:
                 numerator = 0
                 for word in block.value.split():
                     if word in kb[attr]:

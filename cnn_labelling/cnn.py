@@ -114,7 +114,7 @@ class CNN(object):
         embedding_matrix = self.create_embedding_matrix(vocab_size,self.tokenizer.word_index)
         # define model
         self.model = self.define_model(vocab_size,128,[4,6],embedding_matrix)
-        # fit the model
+        # train model
         self.model.fit(X_train, y_train, epochs=10, verbose=0)
         self.model.save("model.h5")
 
