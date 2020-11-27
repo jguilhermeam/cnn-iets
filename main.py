@@ -4,7 +4,7 @@ from blocking import blocking,block
 from cnn_labelling.cnn import CNN
 from cnn_labelling import greedy_labelling
 from kb_labelling import anchor_labelling
-import sys,time
+import sys
 
 if __name__ == "__main__":
     try:
@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     #extract blocks from input file
     records = blocking.extract_blocks(input_file,k_base)
-
+    #records = F.manual_block("CHAN DARETTE 13490 Maxella Ave. Marina Del Rey, (310) 301-1004")
 
     #kb based labelling - detecting anchor blocks
     anchor_labelling.kb_based_labelling(k_base,records,0.9)
@@ -29,8 +29,5 @@ if __name__ == "__main__":
     cnn = CNN(k_base)
     greedy_labelling.cnn_greedy_labelling(k_base,records,cnn,0.6)
 
-    for r in records:
-        for block in r:
-            print(block.raw_value+" - attribute="+block.attr)
-        print("\n===================\n")
-        time.sleep(20)
+    #debugging
+    F.print_blocks(records)

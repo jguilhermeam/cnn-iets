@@ -1,7 +1,9 @@
 import sys
 import unicodedata
 import re
+import time
 import xml.etree.ElementTree as ET
+from blocking.block import Block
 
 def read_file(filename):
     try:
@@ -20,3 +22,17 @@ def normalize_str(input_str):
     #    normalized = re.sub(r' ', '', normalized)
     normalized = re.sub('\d','dg',normalized) #change digits do dg
     return normalized
+
+#functions only for debugging purposes
+def manual_block(text):
+    blocks_list = []
+    for word in text.split():
+        blocks_list.append(Block(normalize_str(word), word))
+    return [blocks_list]
+
+def print_blocks(records):
+    for blocks in records:
+        for block in blocks:
+            print(block.raw_value+" - attribute="+block.attr)
+        print("\n===================\n")
+        time.sleep(12)

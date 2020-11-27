@@ -62,6 +62,8 @@ def greedy_labelling(blocks,probabilities,threshold):
             probabilities.remove(choosen)
             sc = choosen[1]
             Ac = choosen[2]
+            if sc.attr != 'none':
+                continue
             sc.attr = Ac
             index = blocks.index(sc)
             for i,sc_b in enumerate(blocks):
