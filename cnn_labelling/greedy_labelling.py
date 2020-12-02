@@ -2,9 +2,9 @@ def cnn_greedy_labelling(k_base,records,cnn,threshold):
     for blocks in records:
         probabilities = []
         for i in range(0,len(blocks)):
-            if blocks[i].is_anchor == False:
-                cnn_output = cnn.predict(blocks[i])
-                probabilities.extend(normalize_cnn_probabilities(k_base,cnn_output,blocks,i))
+            #if blocks[i].is_anchor == False: #removed because of reinforcement
+            cnn_output = cnn.predict(blocks[i])
+            probabilities.extend(normalize_cnn_probabilities(k_base,cnn_output,blocks,i))
         greedy_labelling(blocks,probabilities,threshold)
 
 def get_missing_anchors(record,k_base):
@@ -15,6 +15,7 @@ def get_missing_anchors(record,k_base):
     return missing
 
 def normalize_cnn_probabilities(k_base,probabilities,blocks,pos):
+    attributes = k_base.get_attributes()
     missing_anchors = get_missing_anchors(blocks,k_base)
     possible_attributes = []
     for j in reversed(range(0,pos)):
@@ -32,7 +33,11 @@ def normalize_cnn_probabilities(k_base,probabilities,blocks,pos):
         denominator += probabilities[attr]
     for attr in possible_attributes:
         p = probabilities[attr]/denominator
+        blocks[pos].cnn_scores[attr] = p
         normalized_probabilities.append((p,blocks[pos],attr))
+    for attr in attributes:
+        if attr not in blocks[pos].cnn_scores:
+            blocks[pos].cnn_scores[attr] = 0
     return normalized_probabilities
 
 
@@ -40,7 +45,7 @@ def get_max_prob(partition,probabilities):
     max = -1
     choosen = None
     for p in probabilities:
-        if p[0] > max and p[1] in partition:
+        if p[0] >= max and p[1] in partition:
             max = p[0]
             choosen = p
     return choosen

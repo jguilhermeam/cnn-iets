@@ -1,110 +1,101 @@
 class BPSM:
 
-    def __init__(self, matching_list, k_base):
-        self.f_matrix = self.init_f_matrix(
-            k_base.get_attributes(), matching_list)
-        self.b_matrix = self.init_b_matrix(
-            k_base.get_attributes(), matching_list)
-        self.p_matrix = self.init_p_matrix(
-            k_base.get_attributes(), matching_list)
+    def __init__(self, records, attribute_list):
+        print("Calculating BPSM matrices...")
+        attribute_list.extend(['none','begin','end'])
+        self.f_matrix = self.init_f_matrix(records, attribute_list)
+        self.b_matrix = self.init_b_matrix(records, attribute_list)
 
-    def init_f_matrix(self, attribute_list, matching_list):
-        attribute_list.append('none')
-        attribute_index = {}
-        for i, attr in enumerate(attribute_list):
-            attribute_index[attr] = {'id': i + 1, 'transitions': 0}
+        attribute_list.remove('end')
+        attribute_list.remove('begin')
+        self.p_matrix = self.init_p_matrix(records, attribute_list)
+        attribute_list.remove('none')
 
-        matrix_size = len(attribute_list)+1
-        t_matrix = [[0 for i in range(matrix_size)]
-                    for j in range(matrix_size)]
+    def init_f_matrix(self, records, attribute_list):
+        transitions = {}
+        matrix = {}
+        for i in attribute_list:
+            transitions[i] = 0
+            matrix[i] = {}
+            for j in attribute_list:
+                matrix[i][j] = 0
 
-        for i in range(matrix_size-1):
-            t_matrix[0][i+1] = attribute_list[i]
-            t_matrix[i+1][0] = attribute_list[i]
+        for blocks in records:
+            #begin
+            i = 'begin'
+            j = blocks[0].attr
+            matrix[i][j] += 1
+            transitions[i] += 1
+            #middle
+            last = len(blocks)-1
+            for aux in range(0,last):
+                i = blocks[aux].attr
+                j = blocks[aux+1].attr
+                matrix[i][j] += 1
+                transitions[i] += 1
+            #ending
+            i = blocks[last].attr
+            j = 'end'
+            matrix[i][j] += 1
+            transitions[i] += 1
 
-        # Set the number of transitions from label i to label j
-        for block in matching_list:
-            for n in range(len(block)-1):
-                current_label = block[n].label
-                next_label = block[n+1].label
-                i = attribute_index[current_label]['id']
-                j = attribute_index[next_label]['id']
-                attribute_index[current_label]['transitions'] += 1
-                t_matrix[i][j] += 1
+        for i in attribute_list:
+            for j in attribute_list:
+                if transitions[i] > 0:
+                    matrix[i][j] /= transitions[i]
 
-        # Divides the number of transitions from label i to label j
-        # by the total number of transitions starting from label i
-        for i in range(matrix_size-1):
-            for j in range(matrix_size-1):
-                if t_matrix[i+1][j+1] > 0:
-                    t_matrix[i+1][j+1] /= attribute_index[t_matrix[i+1]
-                                                          [0]]['transitions']
+        return matrix
 
-        return t_matrix
+    def init_b_matrix(self, records, attribute_list):
+        transitions = {}
+        matrix = {}
+        for i in attribute_list:
+            transitions[i] = 0
+            matrix[i] = {}
+            for j in attribute_list:
+                matrix[i][j] = 0
 
-    def init_b_matrix(self, attribute_list, matching_list):
-        '''Initialize transitions matrix'''
-        attribute_list.append('none')
-        attribute_index = {}
-        for i, attr in enumerate(attribute_list):
-            attribute_index[attr] = {'id': i + 1, 'transitions': 0}
+        for blocks in records:
+            #ending
+            last = len(blocks)-1
+            k = 'end'
+            j = blocks[last].attr
+            matrix[k][j] += 1
+            transitions[k] += 1
+            #middle
+            for aux in reversed(range(1,last)):
+                k = blocks[aux].attr
+                j = blocks[aux-1].attr
+                matrix[k][j] += 1
+                transitions[k] += 1
+            #begin
+            k = blocks[0].attr
+            j = 'begin'
+            matrix[k][j] += 1
+            transitions[k] += 1
 
-        matrix_size = len(attribute_list)+1
-        t_matrix = [[0 for i in range(matrix_size)]
-                    for j in range(matrix_size)]
+        for k in attribute_list:
+            for j in attribute_list:
+                if transitions[k] > 0:
+                    matrix[k][j] /= transitions[k]
 
-        for i in range(matrix_size-1):
-            t_matrix[0][i+1] = attribute_list[i]
-            t_matrix[i+1][0] = attribute_list[i]
+        return matrix
 
-        # Set the number of transitions from label i to label j
-        for block in matching_list:
-            for n in range(len(block)-1):
-                current_label = block[n].label
-                next_label = block[n+1].label
-                i = attribute_index[current_label]['id']
-                j = attribute_index[next_label]['id']
-                attribute_index[current_label]['transitions'] += 1
-                t_matrix[i][j] += 1
+    def init_p_matrix(self, records, attribute_list):
+        max_positions = max([len(v) for v in records])
+        total_in_pos = [0 for i in range(max_positions)]
+        matrix = {}
+        for attr in attribute_list:
+            matrix[attr] = [0 for i in range(max_positions)]
 
-        # Divides the number of transitions from label i to label j
-        # by the total number of transitions starting from label i
-        for i in range(matrix_size-1):
-            for j in range(matrix_size-1):
-                if t_matrix[i+1][j+1] > 0:
-                    t_matrix[i+1][j+1] /= attribute_index[t_matrix[i+1]
-                                                          [0]]['transitions']
+        for blocks in records:
+            for i in range(0,len(blocks)):
+                attr = blocks[i].attr
+                matrix[attr][i] += 1
+                total_in_pos[i] += 1
 
-        return t_matrix
+        for attr in attribute_list:
+            for i in range(max_positions):
+                matrix[attr][i] /= total_in_pos[i]
 
-    def init_p_matrix(self, attribute_list, matching_list):
-        '''Initialize positioning matrix'''
-        attribute_list.append('none')
-        attribute_index = {}
-        for i, attr in enumerate(attribute_list):
-            attribute_index[attr] = i + 1
-
-        rows = len(attribute_list)+1
-        cols = max([len(v) for v in matching_list])+1
-        p_matrix = [[0 for i in range(cols)] for j in range(rows)]
-        position_index = [{i+1: 0} for i in range(cols-1)]
-
-        for i in range(rows-1):
-            p_matrix[i+1][0] = attribute_list[i]
-        for i in range(cols-1):
-            p_matrix[0][i+1] = (i+1)
-
-        for block in matching_list:
-            for n in range(len(block)):
-                current_label = block[n].label
-                i = attribute_index[current_label]
-                j = n+1
-                p_matrix[i][j] += 1
-                position_index[n][j] += 1
-
-        for i in range(rows-1):
-            for j in range(cols-1):
-                if p_matrix[i+1][j+1] > 0:
-                    p_matrix[i+1][j+1] /= position_index[j][j+1]
-
-        return p_matrix
+        return matrix
