@@ -5,12 +5,25 @@ def reinforce(records, attribute_list):
     print("applying reinforcement...")
 
     for blocks in records:
+        max = len(blocks)-1
         i = 0
-        k = len(blocks)-1
+        k = max
 
         while True:
-            if i >= k:
+            #get leftmost unlabelled segment
+            while True:
+                if i > max or blocks[i].attr == 'none':
+                    break
+                i += 1
+            #get rightmost unlabelled segment
+            while True:
+                if k < 0 or blocks[k].attr == 'none':
+                    break
+                k -= 1
+
+            if i > k:
                 break
+
             prob_fw = calculate_pfw(i,blocks,attribute_list,bpsm)
             prob_bw = calculate_pbw(k,blocks,attribute_list,bpsm)
 

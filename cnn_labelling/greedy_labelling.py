@@ -2,9 +2,9 @@ def cnn_greedy_labelling(k_base,records,cnn,threshold):
     for blocks in records:
         probabilities = []
         for i in range(0,len(blocks)):
-            #if blocks[i].is_anchor == False: #removed because of reinforcement
-            cnn_output = cnn.predict(blocks[i])
-            probabilities.extend(normalize_cnn_probabilities(k_base,cnn_output,blocks,i))
+            if blocks[i].is_anchor == False:
+                cnn_output = cnn.predict(blocks[i])
+                probabilities.extend(normalize_cnn_probabilities(k_base,cnn_output,blocks,i))
         greedy_labelling(blocks,probabilities,threshold)
 
 def get_missing_anchors(record,k_base):
