@@ -44,7 +44,10 @@ def calculate_pfw(j,blocks,attribute_list,bpsm):
 
     attribute_score = {}
     for attr in attribute_list:
-        attribute_score[attr] = 1 - ((1-blocks[j].cnn_scores[attr])*(1-bpsm.f_matrix[i_attr][attr])*(1-bpsm.p_matrix[attr][j]))
+        fw = bpsm.f_matrix[i_attr][attr]
+        if i_attr == 'none':
+            fw = 0
+        attribute_score[attr] = 1 - ((1-blocks[j].cnn_scores[attr])*(1-fw)*(1-bpsm.p_matrix[attr][j]))
     blocks[j].fw_reinforcement_score = attribute_score
     return blocks[j].get_top_fw_reinforcement_score()
 
@@ -57,8 +60,9 @@ def calculate_pbw(j,blocks,attribute_list,bpsm):
 
     attribute_score = {}
     for attr in attribute_list:
-        attribute_score[attr] = 1 - ((1-blocks[j].cnn_scores[attr])
-        *(1-bpsm.b_matrix[k_attr][attr])
-        *(1-bpsm.p_matrix[attr][j]))
+        bw = bpsm.b_matrix[k_attr][attr]
+        if k_attr == 'none':
+            bw = 0
+        attribute_score[attr] = 1 - ((1-blocks[j].cnn_scores[attr])*(1-bw)*(1-bpsm.p_matrix[attr][j]))
     blocks[j].bw_reinforcement_score = attribute_score
     return blocks[j].get_top_bw_reinforcement_score()

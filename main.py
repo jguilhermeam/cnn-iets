@@ -22,7 +22,6 @@ if __name__ == "__main__":
     #extract blocks from input file
     records = blocking.extract_blocks(input_file,k_base)
     #records = F.manual_block("CHAN DARETTE 13490 Maxella Ave. Marina Del Rey, (310) 301-1004")
-    records = records[:2]
 
     #kb based labelling - detecting anchor blocks
     anchor_labelling.kb_based_labelling(k_base,records,0.9)
@@ -36,4 +35,4 @@ if __name__ == "__main__":
     reinforcement.reinforce(records,k_base.get_attributes())
 
     #debugging
-    F.print_blocks(records)
+    F.print_blocks(records[:5])
