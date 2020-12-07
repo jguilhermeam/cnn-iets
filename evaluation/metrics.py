@@ -8,4 +8,7 @@ class Metrics:
     def calculate_f_measure(self):
         numerator = 2*self.precision*self.recall
         denominator = self.precision+self.recall
-        self.f_measure = numerator / denominator
+        try:
+            self.f_measure = numerator / denominator
+        except ZeroDivisionError:
+            pass

@@ -3,11 +3,16 @@ from utils import functions as F
 from evaluation.metrics import Metrics
 
 def evaluate_results(results,reference_file,attributes):
+    evaluate_results_per_attribute(results,reference_file,attributes)
+    evaluate_results_per_record(results,reference_file,attributes)
+
+def evaluate_results_per_attribute(results,reference_file,attributes):
     reference = F.read_file(reference_file)
     results_stats = {}
     reference_stats = {}
     right_answers = {}
     attr_evaluation = {}
+    record_evaluation = []
     for attr in attributes:
         attr_evaluation[attr] = Metrics()
         reference_stats[attr] = 0
@@ -39,3 +44,67 @@ def evaluate_results(results,reference_file,attributes):
 
     for k, v in attr_evaluation.items():
         print('{:<15} {:<20} {:<20} {:<18}'.format(k, v.precision, v.recall, v.f_measure))
+
+
+def evaluate_results_per_record(results,reference_file,attributes):
+    reference = F.read_file(reference_file)
+    record_evaluation = []
+
+    for result_record, ref in zip(results, reference):
+        results_stats = {}
+        reference_stats = {}
+        right_answers = {}
+        attr_evaluation = {}
+        for attr in attributes:
+            attr_evaluation[attr] = Metrics()
+            reference_stats[attr] = 0
+            results_stats[attr] = 0
+            right_answers[attr] = 0
+
+        reference_record = ET.fromstring('<record>'+ref+'</record>')
+
+        for reference_block in reference_record:
+            reference_stats[reference_block.tag] += len(reference_block.text.split())
+
+        for result_block in result_record:
+            results_stats[result_block.attr] += len(result_block.value.split())
+
+        for result_block in result_record:
+            for reference_block in reference_record:
+                if result_block.value in F.normalize_str(reference_block.text) and result_block.attr == reference_block.tag:
+                    right_answers[result_block.attr] += len(result_block.value.split())
+                    break
+
+        for attr in attributes:
+            try:
+                attr_evaluation[attr].precision = right_answers[attr] / results_stats[attr]
+            except ZeroDivisionError:
+                pass
+            try:
+                attr_evaluation[attr].recall = right_answers[attr] / reference_stats[attr]
+            except ZeroDivisionError:
+                pass
+            attr_evaluation[attr].calculate_f_measure()
+
+        record = Metrics()
+        for attr in attributes:
+            record.precision += attr_evaluation[attr].precision
+            record.recall += attr_evaluation[attr].recall
+            record.f_measure += attr_evaluation[attr].f_measure
+        record.precision /= len(attr_evaluation)
+        record.recall /= len(attr_evaluation)
+        record.f_measure /= len(attr_evaluation)
+        record_evaluation.append(record)
+
+    final_metrics = Metrics()
+    for record in record_evaluation:
+        final_metrics.precision += record.precision
+        final_metrics.recall += record.recall
+        final_metrics.f_measure += record.f_measure
+    final_metrics.precision /= len(record_evaluation)
+    final_metrics.recall /= len(record_evaluation)
+    final_metrics.f_measure /= len(record_evaluation)
+
+    print('---------- Results Evaluation Per Record ----------')
+    print('{:<20} {:<20} {:<18}'.format('Precision', 'Recall', 'F-Measure'))
+    print('{:<20} {:<20} {:<18}'.format(final_metrics.precision, final_metrics.recall, final_metrics.f_measure))
