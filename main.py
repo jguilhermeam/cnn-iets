@@ -5,15 +5,16 @@ from cnn_labelling.cnn import CNN
 from cnn_labelling import greedy_labelling
 from kb_labelling import anchor_labelling
 from reinforcement import reinforcement
+from evaluation import evaluate
 import sys
 
 if __name__ == "__main__":
     try:
         kb_file = sys.argv[1]
         input_file = sys.argv[2]
-        #reference_file = sys.argv[3]
+        reference_file = sys.argv[3]
     except IndexError as e:
-        print('Missing arguments. Parameters must be: knowledge_base input_file')
+        print('Missing arguments. Parameters must be: knowledge_base input_file reference_file')
         sys.exit(1)
 
     #retrieve knowledge base
@@ -35,4 +36,7 @@ if __name__ == "__main__":
     reinforcement.reinforce(records,k_base.get_attributes())
 
     #debugging
-    F.print_blocks(records[:5])
+    #F.print_blocks(records[:5])
+
+    #evaluation
+    evaluate.evaluate_results(records,reference_file,k_base.get_attributes())
