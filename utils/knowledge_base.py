@@ -77,25 +77,22 @@ class KnowledgeBase:
         self.df['label'] = le.fit_transform(self.df['attribute'])
         self.labels_dict = le.inverse_transform(range(0,num_attributes))
 
-    def get_probabilities(self,terms):
-        probabilities = {}
+    def get_probabilities(self,word):
+        probabilities = np.zeros(self.num_attributes)
         attributes = self.get_attributes()
-        #get probabilities p(word,attr)
-        for i,word in enumerate(terms):
-            denominator = 1
-            probabilities[word] = np.zeros(self.num_attributes)
-            for attr in self.k_base:
-                if word in self.k_base[attr]:
-                    freq = self.k_base[attr][word]
-                    for x in range(1,freq+1):
-                        denominator += 1/x
-            for i,attr in enumerate(attributes):
-                numerator = 0
-                if word in self.k_base[attr]:
-                    freq = self.k_base[attr][word]
-                    for x in range(1,freq+1):
-                        numerator += 1/x
-                    if numerator > 0:
-                        numerator += 1 #to avoid false 1.0 probabilities
-                    probabilities[word][i] = numerator/denominator
+        denominator = 1
+        for attr in attributes:
+            if word in self.k_base[attr]:
+                freq = self.k_base[attr][word]
+                for x in range(1,freq+1):
+                    denominator += 1/x
+        for i,attr in enumerate(self.labels_dict):
+            numerator = 0
+            if word in self.k_base[attr]:
+                freq = self.k_base[attr][word]
+                for x in range(1,freq+1):
+                    numerator += 1/x
+                if numerator > 0:
+                    numerator += 1 #to avoid false 1.0 probabilities
+                probabilities[i] = numerator/denominator
         return probabilities

@@ -22,70 +22,71 @@ import numpy as np
 
 class CNN(object):
 
-    def __init__(self,k_base):
+    def __init__(self):
         word2vec_sample = str(find('models/word2vec_sample/pruned.word2vec.txt'))
         self.wv = gensim.models.KeyedVectors.load_word2vec_format(word2vec_sample, binary=False)
-        self.wv_size = 300 #word2vec tem 300 dimensoes
-        self.emb_size = 0
-        self.pos_dict = {}
-        self.pos_i = 1
-        self.k_base = k_base
-        self.tokenizer = Tokenizer(num_words=10000)
-        self.tokenizer.fit_on_texts(self.k_base.df['segment'])
-        if os.path.isfile("model.h5"):
-            print("Loading CNN model...")
-            self.model = load_model("model.h5",compile=False)
-            self.max_length = 0
-            for segment in self.k_base.df['segment']:
-                self.max_length = max(self.max_length,len(segment.split()))
-        else:
-            print("Training CNN model...")
-            self.train_model()
+        self.wv_size = 300
 
-
-
-    def create_embedding_matrix(self,vocab_size,word_index):
-        pos_dict = {}
-        self.emb_size = self.wv_size + self.k_base.num_attributes + 3 #word2vec + cp vector (size = num_attributes) + 3 features (position,lenght and postag)
-        embedding_matrix = np.zeros((vocab_size,self.emb_size))
-        for index, row in self.k_base.df.iterrows():
-            segment = row['segment']
-            attr = row['attribute']
-            terms = segment.split()
-            pos_tags = nltk.pos_tag(terms)
-            segment_size = len(terms)
-            cp_vector = self.k_base.get_probabilities(terms)
-            for pos_segment,word in enumerate(terms):
-                #first feature is word2vec
-                if word in self.wv:
-                    vector = self.wv[word]
+    def create_weights(self,word_list,word_dict,attributes,k_base):
+        vocab_size = len(word_dict)+1
+        self.wv_matrix = np.zeros((vocab_size,self.wv_size))
+        self.cp_size = len(attributes)
+        self.cp_matrix = np.zeros((vocab_size,self.cp_size))
+        for words in word_list:
+            for w in words:
+                if w in self.wv:
+                    vector = self.wv[w]
                 else:
                     vector = np.random.rand(self.wv_size)
-                #second feature is position in segment
-                vector = np.append(vector,pos_segment)
-                #third feature is position in record - it was removed
-                #fourth feature is size of the segment
-                vector = np.append(vector,segment_size)
-                #fifth feature is pos_tag
-                tag = pos_tags[pos_segment][1]
-                if tag not in self.pos_dict:
-                    self.pos_dict[tag] = self.pos_i
-                    self.pos_i += 1
-                vector = np.append(vector,self.pos_dict[tag])
-                #sixth feature is cp propability vector
-                vector = np.append(vector,cp_vector[word])
-                #add to embedding matrix
-                embedding_matrix[word_index[word]] = vector
-        return embedding_matrix
+                self.wv_matrix[word_dict[w]] = vector
+                self.cp_matrix[word_dict[w]] = k_base.get_probabilities(w)
+
+    def define_and_train(self,df,k_base,attributes):
+        word_list = []
+        positions_list = []
+        lengths_list = []
+        pos_tags_list = []
+        for index, row in df.iterrows():
+            words = row['segment'].split()
+            word_list.append(words)
+            positions_list.append([i+1 for i in range(len(words))])
+            lengths_list.append([len(words)])
+            tags = [i[1] for i in nltk.pos_tag(words)]
+            pos_tags_list.append(tags)
 
 
-    def define_model(self, vocab_size, num_filters, filter_sizes, embedding_matrix):
-        inputs = Input(shape=(self.max_length,))
-        embedding = Embedding(vocab_size, self.emb_size, weights=[embedding_matrix], input_length=self.max_length, trainable=True)(inputs)
+        self.word_dict = F.makeDictFromList(word_list)
+        self.pos_tags_dict = F.makeDictFromList(pos_tags_list)
+
+        words_mapped = F.mapWordToId(word_list,self.word_dict)
+        pos_tags_mapped = F.mapWordToId(pos_tags_list,self.pos_tags_dict)
+
+        words_mapped, seq_len = F.pad(words_mapped)
+        pos_tags_mapped, _ = F.pad(pos_tags_mapped)
+        positions_mapped, _ = F.pad(positions_list)
+        lengths_mapped = F.pad_to(lengths_list,seq_len)
+
+        self.create_weights(word_list,self.word_dict,attributes,k_base)
+        self.max_len = seq_len
+
+        vocab_size = len(self.word_dict)+1
+        pos_tag_vocab_size = len(self.pos_tags_dict)+1
+
+        input1 = Input(shape=(seq_len,))
+        input2 = Input(shape=(seq_len,))
+        input3 = Input(shape=(seq_len,))
+        input4 = Input(shape=(seq_len,))
+        input5 = Input(shape=(seq_len,))
+        emb1 = Embedding(vocab_size, self.wv_size, weights=[self.wv_matrix], input_length=seq_len, trainable=True)(input1)
+        emb2 = Embedding(seq_len+1, 5, input_length=seq_len, trainable=True)(input2)
+        emb3 = Embedding(seq_len+1, 5, input_length=seq_len, trainable=True)(input3)
+        emb4 = Embedding(pos_tag_vocab_size, 5, input_length=seq_len, trainable=True)(input4)
+        emb5 = Embedding(vocab_size, self.cp_size, weights=[self.cp_matrix], input_length=seq_len, trainable=True)(input5)
+        embedding = concatenate([emb1,emb2,emb3,emb4,emb5])
         layers = []
-        for i in filter_sizes:
-            conv = Conv1D(filters=num_filters, kernel_size=i, activation='relu')(embedding)
-            poolsize = self.max_length-i+1
+        for i in [4,6]:
+            conv = Conv1D(filters=128, kernel_size=i, activation='relu')(embedding)
+            poolsize = seq_len-i+1
             pool = MaxPooling1D(pool_size=poolsize)(conv)
             layers.append(pool)
         # merge
@@ -94,35 +95,30 @@ class CNN(object):
         flat = Flatten()(merged)
         drop = Dropout(0.5)(flat)
         # softmax
-        outputs = Dense(self.k_base.num_attributes, activation='softmax')(drop)
-        model = Model(inputs=inputs, outputs=outputs)
+        outputs = Dense(len(attributes), activation='softmax')(drop)
+        self.model = Model(inputs=[input1,input2,input3,input4,input5], outputs=outputs)
         # compile
-        model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        self.model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         # summarize
-        print(model.summary())
-        return model
+        print(self.model.summary())
+        #train
+        self.model.fit(x=[words_mapped,positions_mapped,lengths_mapped,pos_tags_mapped,words_mapped], y=df['label'], epochs=10, verbose=0)
 
+        self.labels_dict = k_base.labels_dict
 
-    def train_model(self):
-        X_train = self.tokenizer.texts_to_sequences(self.k_base.df['segment'])
-        y_train = self.k_base.df['label']
-        vocab_size = len(self.tokenizer.word_index) + 1
-        self.max_length = 0
-        for x in X_train:
-            self.max_length = max(self.max_length,len(x))
-        X_train = pad_sequences(X_train, padding='post', maxlen=self.max_length)
-        embedding_matrix = self.create_embedding_matrix(vocab_size,self.tokenizer.word_index)
-        # define model
-        self.model = self.define_model(vocab_size,128,[4,6],embedding_matrix)
-        # train model
-        self.model.fit(X_train, y_train, epochs=10, verbose=0)
-        self.model.save("model.h5")
-
-    def predict(self,block):
-        tokens = self.tokenizer.texts_to_sequences([block.value])
-        padded = pad_sequences(tokens, padding='post',maxlen=self.max_length)
-        predictions = self.model.predict(padded)[0]
+    def predict(self,words):
+        terms = words.split()
+        words_mapped = F.mapWordToId([terms],self.word_dict)
+        words_mapped = F.pad_to(words_mapped,self.max_len)
+        positions = [[i+1 for i in range(len(terms))]]
+        positions = F.pad_to(positions,self.max_len)
+        length = [[len(terms)]]
+        length = F.pad_to(length,self.max_len)
+        tags = [i[1] for i in nltk.pos_tag(terms)]
+        pos_tags_mapped = F.mapWordToId([tags],self.pos_tags_dict)
+        pos_tags_mapped = F.pad_to(pos_tags_mapped,self.max_len)
+        predictions = self.model.predict(x=[words_mapped,positions,length,pos_tags_mapped,words_mapped])[0]
         scores = {}
         for i in range(0,len(predictions)):
-            scores[self.k_base.labels_dict[i]] = predictions[i]
+            scores[self.labels_dict[i]] = predictions[i]
         return scores

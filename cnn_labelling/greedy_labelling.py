@@ -3,7 +3,7 @@ def cnn_greedy_labelling(k_base,records,cnn,threshold):
         probabilities = []
         for i in range(0,len(blocks)):
             if blocks[i].is_anchor == False:
-                cnn_output = cnn.predict(blocks[i])
+                cnn_output = cnn.predict(blocks[i].value)
                 probabilities.extend(normalize_cnn_probabilities(k_base,cnn_output,blocks,i))
         greedy_labelling(blocks,probabilities,threshold)
 

@@ -28,7 +28,12 @@ if __name__ == "__main__":
     anchor_labelling.kb_based_labelling(k_base,records,0.9)
 
     #cnn-based greedy labelling
-    cnn = CNN(k_base)
+    cnn = CNN()
+    cnn.define_and_train(k_base.df,k_base,k_base.get_attributes())
+    #print(cnn.predict("marina del rey"))
+    #print(cnn.predict("alejos tratorria"))
+    #print(cnn.predict("dgth avenue"))
+    #exit()
     greedy_labelling.cnn_greedy_labelling(k_base,records,cnn,0.6)
 
 
