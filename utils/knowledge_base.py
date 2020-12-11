@@ -8,13 +8,11 @@ class KnowledgeBase:
 
     def __init__(self, kb_file):
         self.k_base = {}
-        self.co_occurrences = {}
-        self.inverted_k_base = {}
+        self.registers = set()
         self.df = None
         self.labels_dict = None
         print("Loading KB...")
         self.init_kb(kb_file)
-        self.init_inverted_k_base()
         self.create_dataframe(kb_file)
         self.num_attributes = len(self.get_attributes())
 
@@ -30,34 +28,16 @@ class KnowledgeBase:
         data = tree.getroot()
         for segment in data:
             attr = segment.tag
+            text = F.normalize_str(segment.text)
+            self.registers.add(text)
             if attr not in self.k_base:
                 self.k_base[attr] = {}
-            terms = F.normalize_str(segment.text).split()
+            terms = text.split()
             for term in terms:
                 if term not in self.k_base[attr]:
                     self.k_base[attr][term] = 0
                 self.k_base[attr][term] += 1
 
-            i = 0
-            while i < len(terms)-1:
-                if terms[i] in self.co_occurrences:
-                    if (terms[i+1], attr) not in self.co_occurrences[terms[i]]:
-                        self.co_occurrences[terms[i]].append((terms[i+1], attr))
-                else:
-                    self.co_occurrences[terms[i]] = []
-                i += 1
-
-            if len(terms) > 0 and terms[-1] not in self.co_occurrences:
-                self.co_occurrences[terms[-1]] = []
-
-
-    def init_inverted_k_base(self):
-        for attribute in self.k_base:
-            for term in self.k_base[attribute]:
-                if term not in self.inverted_k_base:
-                    self.inverted_k_base[term] = {}
-                if attribute not in self.inverted_k_base[term]:
-                    self.inverted_k_base[term][attribute] = self.k_base[attribute][term]
 
     def create_dataframe(self,kb_file):
         num_attributes = len(self.get_attributes())

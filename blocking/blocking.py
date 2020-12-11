@@ -19,7 +19,12 @@ def build_blocks(terms, raw_terms, k_base):
     i = 0
     j = 1
     while j < len(terms):
-        if not co_occurs(terms[j-1], terms[j], k_base):
+        co_occur = False
+        for entry in k_base.registers:
+            if terms[j-1]+' '+terms[j] in entry:
+                co_occur = True
+                break
+        if co_occur == False:
             blocks_list.append(Block('', ''))
             i += 1
         if blocks_list[i].value in '':
@@ -30,13 +35,3 @@ def build_blocks(terms, raw_terms, k_base):
             blocks_list[i].raw_value += ' ' + raw_terms[j]
         j += 1
     return blocks_list
-
-
-def co_occurs(current_term, next_term, k_base):
-    '''Verify if the current term and next term are known
-    to co-occur in some occurrence in the knowledge base'''
-    if current_term in k_base.inverted_k_base and next_term in k_base.inverted_k_base:
-        co_occurrences = k_base.co_occurrences[current_term]
-        if next_term in [x[0] for x in co_occurrences]:
-            return True
-    return False
