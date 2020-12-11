@@ -15,29 +15,37 @@ def evaluate_results_per_attribute(results,reference_file,attributes):
     record_evaluation = []
     for attr in attributes:
         attr_evaluation[attr] = Metrics()
-        reference_stats[attr] = 0
-        results_stats[attr] = 0
-        right_answers[attr] = 0
 
     for result_record, ref in zip(results, reference):
         reference_record = ET.fromstring('<record>'+ref+'</record>')
 
         for reference_block in reference_record:
-            reference_stats[reference_block.tag] += len(reference_block.text.split())
+            if reference_block.tag not in reference_stats:
+                reference_stats[reference_block.tag] = len(reference_block.text.split())
+            else:
+                reference_stats[reference_block.tag] += len(reference_block.text.split())
 
         for result_block in result_record:
-            results_stats[result_block.attr] += len(result_block.value.split())
+            if result_block.attr != 'none' and result_block.attr not in results_stats:
+                results_stats[result_block.attr] = len(result_block.value.split())
+            else:
+                results_stats[result_block.attr] += len(result_block.value.split())
 
         for result_block in result_record:
             for reference_block in reference_record:
                 if result_block.value in F.normalize_str(reference_block.text) and result_block.attr == reference_block.tag:
-                    right_answers[result_block.attr] += len(result_block.value.split())
+                    if result_block.attr not in right_answers:
+                        right_answers[result_block.attr] = len(result_block.value.split())
+                    else:
+                        right_answers[result_block.attr] += len(result_block.value.split())
                     break
 
+
     for attr in attributes:
-        attr_evaluation[attr].precision = right_answers[attr] / results_stats[attr]
-        attr_evaluation[attr].recall = right_answers[attr] / reference_stats[attr]
-        attr_evaluation[attr].calculate_f_measure()
+        if attr in results_stats and attr in reference_stats and attr in right_answers:
+            attr_evaluation[attr].precision = right_answers[attr] / results_stats[attr]
+            attr_evaluation[attr].recall = right_answers[attr] / reference_stats[attr]
+            attr_evaluation[attr].calculate_f_measure()
 
     print('---------- Results Evaluation Per Attribute ----------')
     print('{:<15} {:<20} {:<20} {:<18}'.format('Attribute', 'Precision', 'Recall', 'F-Measure'))
@@ -55,39 +63,41 @@ def evaluate_results_per_record(results,reference_file,attributes):
         reference_stats = {}
         right_answers = {}
         attr_evaluation = {}
-        for attr in attributes:
-            attr_evaluation[attr] = Metrics()
-            reference_stats[attr] = 0
-            results_stats[attr] = 0
-            right_answers[attr] = 0
 
         reference_record = ET.fromstring('<record>'+ref+'</record>')
 
         for reference_block in reference_record:
-            reference_stats[reference_block.tag] += len(reference_block.text.split())
+            if reference_block.tag not in reference_stats:
+                reference_stats[reference_block.tag] = len(reference_block.text.split())
+            else:
+                reference_stats[reference_block.tag] += len(reference_block.text.split())
 
         for result_block in result_record:
-            results_stats[result_block.attr] += len(result_block.value.split())
+            if result_block.attr != 'none' and result_block.attr not in results_stats:
+                results_stats[result_block.attr] = len(result_block.value.split())
+            else:
+                results_stats[result_block.attr] += len(result_block.value.split())
 
         for result_block in result_record:
             for reference_block in reference_record:
                 if result_block.value in F.normalize_str(reference_block.text) and result_block.attr == reference_block.tag:
-                    right_answers[result_block.attr] += len(result_block.value.split())
+                    if result_block.attr not in right_answers:
+                        right_answers[result_block.attr] = len(result_block.value.split())
+                    else:
+                        right_answers[result_block.attr] += len(result_block.value.split())
                     break
 
         for attr in attributes:
-            try:
+            if attr in results_stats and attr in reference_stats and attr in right_answers:
+                attr_evaluation[attr] = Metrics()
                 attr_evaluation[attr].precision = right_answers[attr] / results_stats[attr]
-            except ZeroDivisionError:
-                pass
-            try:
                 attr_evaluation[attr].recall = right_answers[attr] / reference_stats[attr]
-            except ZeroDivisionError:
-                pass
-            attr_evaluation[attr].calculate_f_measure()
+                attr_evaluation[attr].calculate_f_measure()
+            elif attr in results_stats and attr not in reference_stats:
+                attr_evaluation[attr] = Metrics()
 
         record = Metrics()
-        for attr in attributes:
+        for attr in attr_evaluation:
             record.precision += attr_evaluation[attr].precision
             record.recall += attr_evaluation[attr].recall
             record.f_measure += attr_evaluation[attr].f_measure

@@ -47,9 +47,8 @@ class KnowledgeBase:
                     self.co_occurrences[terms[i]] = []
                 i += 1
 
-            if terms[-1] not in self.co_occurrences:
+            if len(terms) > 0 and terms[-1] not in self.co_occurrences:
                 self.co_occurrences[terms[-1]] = []
-
 
 
     def init_inverted_k_base(self):
