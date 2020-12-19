@@ -47,12 +47,26 @@ def evaluate_results_per_attribute(results,reference_file,attributes):
             attr_evaluation[attr].recall = right_answers[attr] / reference_stats[attr]
             attr_evaluation[attr].calculate_f_measure()
 
+    print()
     print('---------- Results Evaluation Per Attribute ----------')
     print('{:<15} {:<20} {:<20} {:<18}'.format('Attribute', 'Precision', 'Recall', 'F-Measure'))
 
+    total_metrics = Metrics()
+    non_zero_attrs = 0
     for k, v in attr_evaluation.items():
-        print('{:<15} {:<20} {:<20} {:<18}'.format(k, v.precision, v.recall, v.f_measure))
+        if v.f_measure > 0:
+            print('{:<15} {:<20} {:<20} {:<18}'.format(k, v.precision, v.recall, v.f_measure))
+            total_metrics.precision += v.precision
+            total_metrics.recall += v.recall
+            total_metrics.f_measure += v.f_measure
+            non_zero_attrs += 1
 
+    total_metrics.precision /= non_zero_attrs
+    total_metrics.recall /= non_zero_attrs
+    total_metrics.f_measure /= non_zero_attrs
+    print()
+    print('{:<15} {:<20} {:<20} {:<18}'.format("Total", total_metrics.precision, total_metrics.recall, total_metrics.f_measure))
+    print()
 
 def evaluate_results_per_record(results,reference_file,attributes):
     reference = F.read_file(reference_file)
@@ -118,3 +132,4 @@ def evaluate_results_per_record(results,reference_file,attributes):
     print('---------- Results Evaluation Per Record ----------')
     print('{:<20} {:<20} {:<18}'.format('Precision', 'Recall', 'F-Measure'))
     print('{:<20} {:<20} {:<18}'.format(final_metrics.precision, final_metrics.recall, final_metrics.f_measure))
+    print()
