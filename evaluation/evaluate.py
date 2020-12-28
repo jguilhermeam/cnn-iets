@@ -4,7 +4,7 @@ from evaluation.metrics import Metrics
 
 def evaluate_results(results,reference_file,attributes):
     evaluate_results_per_attribute(results,reference_file,attributes)
-    evaluate_results_per_record(results,reference_file,attributes)
+    #evaluate_results_per_record(results,reference_file,attributes)
 
 def evaluate_results_per_attribute(results,reference_file,attributes):
     reference = F.read_file(reference_file)
@@ -26,10 +26,11 @@ def evaluate_results_per_attribute(results,reference_file,attributes):
                 reference_stats[reference_block.tag] += len(reference_block.text.split())
 
         for result_block in result_record:
-            if result_block.attr != 'none' and result_block.attr not in results_stats:
-                results_stats[result_block.attr] = len(result_block.value.split())
-            else:
-                results_stats[result_block.attr] += len(result_block.value.split())
+            if result_block.attr != 'none':
+                if result_block.attr not in results_stats:
+                    results_stats[result_block.attr] = len(result_block.value.split())
+                else:
+                    results_stats[result_block.attr] += len(result_block.value.split())
 
         for result_block in result_record:
             for reference_block in reference_record:

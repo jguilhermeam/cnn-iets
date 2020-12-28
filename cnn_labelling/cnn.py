@@ -32,15 +32,8 @@ class CNN(object):
         self.k_base = k_base
         self.tokenizer = Tokenizer(num_words=10000)
         self.tokenizer.fit_on_texts(self.k_base.df['segment'])
-        if os.path.isfile("model.h5"):
-            print("Loading CNN model...")
-            self.model = load_model("model.h5",compile=False)
-            self.max_length = 0
-            for segment in self.k_base.df['segment']:
-                self.max_length = max(self.max_length,len(segment.split()))
-        else:
-            print("Training CNN model...")
-            self.train_model()
+        print("Training CNN model...")
+        self.train_model()
 
 
 
@@ -116,7 +109,7 @@ class CNN(object):
         self.model = self.define_model(vocab_size,128,[4,6],embedding_matrix)
         # train model
         self.model.fit(X_train, y_train, epochs=10, verbose=0)
-        self.model.save("model.h5")
+        #self.model.save("model.h5")
 
     def predict(self,block):
         tokens = self.tokenizer.texts_to_sequences([block.value])

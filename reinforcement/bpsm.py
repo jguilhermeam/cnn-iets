@@ -2,14 +2,13 @@ class BPSM:
 
     def __init__(self, records, attribute_list):
         print("Calculating BPSM matrices...")
-        attribute_list.extend(['none','begin','end'])
+        attribute_list.extend(['begin','end'])
         self.f_matrix = self.init_f_matrix(records, attribute_list)
         self.b_matrix = self.init_b_matrix(records, attribute_list)
 
         attribute_list.remove('end')
         attribute_list.remove('begin')
         self.p_matrix = self.init_p_matrix(records, attribute_list)
-        attribute_list.remove('none')
 
     def init_f_matrix(self, records, attribute_list):
         transitions = {}
@@ -24,20 +23,23 @@ class BPSM:
             #begin
             i = 'begin'
             j = blocks[0].attr
-            matrix[i][j] += 1
-            transitions[i] += 1
+            if j != 'none':
+                matrix[i][j] += 1
+                transitions[i] += 1
             #middle
             last = len(blocks)-1
             for aux in range(0,last):
                 i = blocks[aux].attr
                 j = blocks[aux+1].attr
-                matrix[i][j] += 1
-                transitions[i] += 1
+                if i != 'none' and j != 'none':
+                    matrix[i][j] += 1
+                    transitions[i] += 1
             #ending
             i = blocks[last].attr
             j = 'end'
-            matrix[i][j] += 1
-            transitions[i] += 1
+            if i != 'none':
+                matrix[i][j] += 1
+                transitions[i] += 1
 
         for i in attribute_list:
             for j in attribute_list:
@@ -60,19 +62,22 @@ class BPSM:
             last = len(blocks)-1
             k = 'end'
             j = blocks[last].attr
-            matrix[k][j] += 1
-            transitions[k] += 1
+            if j != 'none':
+                matrix[k][j] += 1
+                transitions[k] += 1
             #middle
             for aux in reversed(range(1,last)):
                 k = blocks[aux].attr
                 j = blocks[aux-1].attr
-                matrix[k][j] += 1
-                transitions[k] += 1
+                if k != 'none' and j != 'none':
+                    matrix[k][j] += 1
+                    transitions[k] += 1
             #begin
             k = blocks[0].attr
             j = 'begin'
-            matrix[k][j] += 1
-            transitions[k] += 1
+            if k != 'none':
+                matrix[k][j] += 1
+                transitions[k] += 1
 
         for k in attribute_list:
             for j in attribute_list:
@@ -91,8 +96,9 @@ class BPSM:
         for blocks in records:
             for i in range(0,len(blocks)):
                 attr = blocks[i].attr
-                matrix[attr][i] += 1
-                total_in_pos[i] += 1
+                if attr != 'none':
+                    matrix[attr][i] += 1
+                    total_in_pos[i] += 1
 
         for attr in attribute_list:
             for i in range(max_positions):

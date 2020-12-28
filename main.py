@@ -31,6 +31,8 @@ if __name__ == "__main__":
     cnn = CNN(k_base)
     greedy_labelling.cnn_greedy_labelling(k_base,records,cnn,0.6)
 
+    #evaluation
+    evaluate.evaluate_results(records,reference_file,k_base.get_attributes())
 
     #reinforcement
     reinforcement.reinforce(records,k_base.get_attributes())
