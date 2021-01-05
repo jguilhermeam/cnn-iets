@@ -28,9 +28,9 @@ class CNN(object):
         self.wv_size = 300 #word2vec tem 300 dimensoes
         self.emb_size = 0
         self.pos_dict = {}
-        self.pos_i = 1
+        self.pos_i = 2
         self.k_base = k_base
-        self.tokenizer = Tokenizer(num_words=10000)
+        self.tokenizer = Tokenizer(num_words=10000,oov_token=1)
         self.tokenizer.fit_on_texts(self.k_base.df['segment'])
         print("Training CNN model...")
         self.train_model()
@@ -43,7 +43,6 @@ class CNN(object):
         embedding_matrix = np.zeros((vocab_size,self.emb_size))
         for index, row in self.k_base.df.iterrows():
             segment = row['segment']
-            attr = row['attribute']
             terms = segment.split()
             pos_tags = nltk.pos_tag(terms)
             segment_size = len(terms)
@@ -100,13 +99,11 @@ class CNN(object):
         X_train = self.tokenizer.texts_to_sequences(self.k_base.df['segment'])
         y_train = self.k_base.df['label']
         vocab_size = len(self.tokenizer.word_index) + 1
-        self.max_length = 0
-        for x in X_train:
-            self.max_length = max(self.max_length,len(x))
+        self.max_length = max([len(x) for x in X_train])
         X_train = pad_sequences(X_train, padding='post', maxlen=self.max_length)
         embedding_matrix = self.create_embedding_matrix(vocab_size,self.tokenizer.word_index)
         # define model
-        self.model = self.define_model(vocab_size,128,[4,6],embedding_matrix)
+        self.model = self.define_model(vocab_size,100,[4,6],embedding_matrix)
         # train model
         self.model.fit(X_train, y_train, epochs=10, verbose=0)
         #self.model.save("model.h5")
